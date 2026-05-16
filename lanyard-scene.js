@@ -1,7 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Canvas, extend, useFrame } from "@react-three/fiber";
-import { Environment, Lightformer, useGLTF, useTexture } from "@react-three/drei";
+import { Environment, Lightformer, useGLTF } from "@react-three/drei";
 import {
     BallCollider,
     CuboidCollider,
@@ -26,13 +26,59 @@ function getFiniteTranslation(body) {
     return isFinitePoint(translation) ? translation : null;
 }
 
+function useSafeTexture(url, options = {}) {
+    const { flipY = true, repeat = false } = options;
+    const [texture, setTexture] = useState(null);
+
+    useEffect(() => {
+        if (!url) {
+            setTexture(null);
+            return undefined;
+        }
+
+        let disposed = false;
+        let loadedTexture = null;
+        const loader = new THREE.TextureLoader();
+        loader.load(
+            url,
+            nextTexture => {
+                if (disposed) {
+                    nextTexture.dispose();
+                    return;
+                }
+                nextTexture.colorSpace = THREE.SRGBColorSpace;
+                nextTexture.flipY = flipY;
+                if (repeat) {
+                    nextTexture.wrapS = THREE.RepeatWrapping;
+                    nextTexture.wrapT = THREE.RepeatWrapping;
+                }
+                nextTexture.needsUpdate = true;
+                loadedTexture = nextTexture;
+                setTexture(nextTexture);
+            },
+            undefined,
+            () => {
+                if (!disposed) setTexture(null);
+            }
+        );
+
+        return () => {
+            disposed = true;
+            if (loadedTexture) loadedTexture.dispose();
+        };
+    }, [url, flipY, repeat]);
+
+    return texture;
+}
+
 function Lanyard({
-    position = [0, 0, 24],
+    position = [0, 0, 20],
     gravity = [0, -40, 0],
     fov = 20,
     transparent = true,
     cardUrl,
-    textureUrl
+    textureUrl,
+    cardFaceUrl
 }) {
     const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
@@ -63,7 +109,7 @@ function Lanyard({
                 h(
                     Physics,
                     { gravity, timeStep: isMobile ? 1 / 30 : 1 / 60 },
-                    h(Band, { isMobile, cardUrl, textureUrl })
+                    h(Band, { isMobile, cardUrl, textureUrl, cardFaceUrl })
                 ),
                 h(
                     Environment,
@@ -102,7 +148,7 @@ function Lanyard({
     );
 }
 
-function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureUrl }) {
+function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureUrl, cardFaceUrl }) {
     const band = useRef();
     const fixed = useRef();
     const j1 = useRef();
@@ -118,7 +164,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
         []
     );
     const { nodes, materials } = useGLTF(cardUrl);
-    const texture = useTexture(textureUrl);
+    const lanyardTexture = useSafeTexture(textureUrl, { repeat: true });
+    const cardFaceTexture = useSafeTexture(cardFaceUrl);
     const curve = useMemo(
         () =>
             new THREE.CatmullRomCurve3([
@@ -214,10 +261,20 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
     });
 
     curve.curveType = "chordal";
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
-    const anchorY = isMobile ? 3.95 : 3.65;
+    const anchorY = 3.35;
     const cardScale = 2.25;
+    const cardMaterialProps = {
+        key: cardFaceTexture ? "card-plain" : "card-original",
+        map: cardFaceTexture ? null : materials.base.map,
+        color: "white",
+        clearcoat: isMobile ? 0 : 1,
+        clearcoatRoughness: 0.15,
+        roughness: 0.9,
+        metalness: 0.8
+    };
+    if (!cardFaceTexture && materials.base.map) {
+        cardMaterialProps["map-anisotropy"] = 16;
+    }
 
     return h(
         React.Fragment,
@@ -253,13 +310,20 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                     h(
                         "mesh",
                         { geometry: nodes.card.geometry },
-                        h("meshPhysicalMaterial", {
-                            map: materials.base.map,
-                            "map-anisotropy": 16,
-                            clearcoat: isMobile ? 0 : 1,
-                            clearcoatRoughness: 0.15,
-                            roughness: 0.9,
-                            metalness: 0.8
+                        h("meshPhysicalMaterial", cardMaterialProps)
+                    ),
+                    cardFaceTexture && h(
+                        "mesh",
+                        { position: [0, 0.42, -0.025], renderOrder: 3 },
+                        h("planeGeometry", { args: [0.68, 0.87] }),
+                        h("meshBasicMaterial", {
+                            map: cardFaceTexture,
+                            transparent: true,
+                            depthTest: false,
+                            polygonOffset: true,
+                            polygonOffsetFactor: -1,
+                            side: THREE.DoubleSide,
+                            toneMapped: false
                         })
                     ),
                     h("mesh", {
@@ -279,8 +343,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                 color: "white",
                 depthTest: false,
                 resolution: isMobile ? [1000, 2000] : [1000, 1000],
-                useMap: true,
-                map: texture,
+                useMap: !!lanyardTexture,
+                map: lanyardTexture || undefined,
                 repeat: [-4, 1],
                 lineWidth: 1
             })
@@ -291,24 +355,24 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
 function resolveLanyardAssets(mount) {
     return {
         cardUrl: mount.dataset.card || new URL("./card.glb", import.meta.url).href,
-        textureUrl: mount.dataset.lanyard || new URL("./lanyard.png", import.meta.url).href
+        textureUrl: mount.dataset.lanyard || new URL("./lanyard.png", import.meta.url).href,
+        cardFaceUrl: mount.dataset.cardFace || ""
     };
 }
 
 export function preloadLanyard(mount) {
     if (!mount) return;
-    const { cardUrl, textureUrl } = resolveLanyardAssets(mount);
+    const { cardUrl } = resolveLanyardAssets(mount);
     useGLTF.preload(cardUrl);
-    useTexture.preload(textureUrl);
 }
 
 export function mountLanyard(mount) {
     if (!mount) return () => {};
 
-    const { cardUrl, textureUrl } = resolveLanyardAssets(mount);
+    const { cardUrl, textureUrl, cardFaceUrl } = resolveLanyardAssets(mount);
     preloadLanyard(mount);
 
     const root = createRoot(mount);
-    root.render(h(Lanyard, { cardUrl, textureUrl }));
+    root.render(h(Lanyard, { cardUrl, textureUrl, cardFaceUrl }));
     return () => root.unmount();
 }

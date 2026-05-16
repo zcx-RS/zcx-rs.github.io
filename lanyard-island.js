@@ -9,7 +9,8 @@ let assetsWarmed = false;
 function assetUrls() {
     return {
         cardUrl: mount.dataset.card || "./card.glb",
-        textureUrl: mount.dataset.lanyard || "./lanyard.png"
+        textureUrl: mount.dataset.lanyard || "./lanyard.png",
+        cardFaceUrl: mount.dataset.cardFace || ""
     };
 }
 
@@ -29,11 +30,16 @@ function warmSceneModule() {
 function warmSceneAssets() {
     if (!mount || assetsWarmed) return;
     assetsWarmed = true;
-    const { cardUrl, textureUrl } = assetUrls();
-    addPreloadHint(cardUrl, "fetch", "model/gltf-binary");
-    addPreloadHint(textureUrl, "image");
-    warmBrowserCache(cardUrl);
-    warmBrowserCache(textureUrl);
+    const { cardUrl, textureUrl, cardFaceUrl } = assetUrls();
+    [
+        [cardUrl, "fetch", "model/gltf-binary"],
+        [textureUrl, "image"],
+        [cardFaceUrl, "image"]
+    ].forEach(([url, as, type]) => {
+        if (!url) return;
+        addPreloadHint(url, as, type);
+        warmBrowserCache(url);
+    });
     warmSceneModule()
         .catch(error => {
             assetsWarmed = false;
