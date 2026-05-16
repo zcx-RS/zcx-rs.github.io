@@ -4,6 +4,14 @@ const page = document.getElementById("page4") || mount?.closest(".page4");
 let sceneModulePromise = null;
 let unmountScene = null;
 let loadingScene = false;
+let assetsWarmed = false;
+
+function assetUrls() {
+    return {
+        cardUrl: mount.dataset.card || "./card.glb",
+        textureUrl: mount.dataset.lanyard || "./lanyard.png"
+    };
+}
 
 function pageIsActive() {
     return !!mount && (!page || page.classList.contains("active"));
@@ -18,11 +26,44 @@ function warmSceneModule() {
     return sceneModulePromise;
 }
 
+function warmSceneAssets() {
+    if (!mount || assetsWarmed) return;
+    assetsWarmed = true;
+    const { cardUrl, textureUrl } = assetUrls();
+    addPreloadHint(cardUrl, "fetch", "model/gltf-binary");
+    addPreloadHint(textureUrl, "image");
+    warmBrowserCache(cardUrl);
+    warmBrowserCache(textureUrl);
+    warmSceneModule()
+        .catch(error => {
+            assetsWarmed = false;
+            console.warn("Lanyard scene failed to preload.", error);
+        });
+}
+
+function addPreloadHint(href, as, type) {
+    const exists = Array.from(document.querySelectorAll('link[rel="preload"]')).some(link => link.getAttribute("href") === href);
+    if (!href || exists) return;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.href = href;
+    link.as = as;
+    if (type) link.type = type;
+    if (as === "fetch") link.crossOrigin = "anonymous";
+    document.head.appendChild(link);
+}
+
+function warmBrowserCache(url) {
+    if (!url || !window.fetch) return;
+    window.fetch(url, { cache: "force-cache" }).catch(() => {});
+}
+
 async function mountScene() {
     if (!mount || unmountScene || loadingScene) return;
     loadingScene = true;
     try {
         const scene = await warmSceneModule();
+        scene.preloadLanyard?.(mount);
         if (!pageIsActive() || unmountScene) return;
         unmountScene = scene.mountLanyard(mount);
         mount.dataset.lanyardReady = "true";
@@ -45,6 +86,7 @@ function stopScene() {
 }
 
 function syncScene() {
+    if (window.scrollY > window.innerHeight * 1.7) warmSceneAssets();
     if (pageIsActive()) mountScene();
     else stopScene();
 }
@@ -66,6 +108,11 @@ if (mount) {
         if (document.hidden) stopScene();
         else syncScene();
     });
+
+    const requestIdle = window.requestIdleCallback?.bind(window) || (callback => window.setTimeout(callback, 1600));
+    window.addEventListener("load", () => {
+        requestIdle(warmSceneAssets, { timeout: 4200 });
+    }, { once: true });
 
     requestAnimationFrame(syncScene);
 }

@@ -27,9 +27,9 @@ function getFiniteTranslation(body) {
 }
 
 function Lanyard({
-    position = [0, 0, 30],
+    position = [0, 0, 28],
     gravity = [0, -40, 0],
-    fov = 20,
+    fov = 19,
     transparent = true,
     cardUrl,
     textureUrl
@@ -216,13 +216,15 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
     curve.curveType = "chordal";
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
+    const anchorY = isMobile ? 5.15 : 5.05;
+    const cardScale = isMobile ? 3.35 : 3.55;
 
     return h(
         React.Fragment,
         null,
         h(
             "group",
-            { position: [0, 4, 0] },
+            { position: [0, anchorY, 0] },
             h(RigidBody, { ref: fixed, ...segmentProps, type: "fixed" }),
             h(RigidBody, { position: [0.5, 0, 0], ref: j1, ...segmentProps }, h(BallCollider, { args: [0.1] })),
             h(RigidBody, { position: [1, 0, 0], ref: j2, ...segmentProps }, h(BallCollider, { args: [0.1] })),
@@ -234,8 +236,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                 h(
                     "group",
                     {
-                        scale: 2.25,
-                        position: [0, -1.2, -0.05],
+                        scale: cardScale,
+                        position: [0, -1.28, -0.05],
                         onPointerOver: () => hover(true),
                         onPointerOut: () => hover(false),
                         onPointerUp: event => {
@@ -280,20 +282,31 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                 useMap: true,
                 map: texture,
                 repeat: [-4, 1],
-                lineWidth: 1
+                lineWidth: isMobile ? 1.18 : 1.24
             })
         )
     );
 }
 
+function resolveLanyardAssets(mount) {
+    return {
+        cardUrl: mount.dataset.card || new URL("./card.glb", import.meta.url).href,
+        textureUrl: mount.dataset.lanyard || new URL("./lanyard.png", import.meta.url).href
+    };
+}
+
+export function preloadLanyard(mount) {
+    if (!mount) return;
+    const { cardUrl, textureUrl } = resolveLanyardAssets(mount);
+    useGLTF.preload(cardUrl);
+    useTexture.preload(textureUrl);
+}
+
 export function mountLanyard(mount) {
     if (!mount) return () => {};
 
-    const cardUrl = mount.dataset.card || new URL("./card.glb", import.meta.url).href;
-    const textureUrl = mount.dataset.lanyard || new URL("./lanyard.png", import.meta.url).href;
-
-    useGLTF.preload(cardUrl);
-    useTexture.preload(textureUrl);
+    const { cardUrl, textureUrl } = resolveLanyardAssets(mount);
+    preloadLanyard(mount);
 
     const root = createRoot(mount);
     root.render(h(Lanyard, { cardUrl, textureUrl }));
