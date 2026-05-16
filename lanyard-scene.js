@@ -71,6 +71,13 @@ function useSafeTexture(url, options = {}) {
     return texture;
 }
 
+function returnToFirstPage() {
+    window.requestAnimationFrame(() => {
+        document.body.classList.remove("smile-cursor");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+}
+
 function Lanyard({
     position = [0, 0, 20],
     gravity = [0, -40, 0],
@@ -298,10 +305,15 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                         onPointerOver: () => hover(true),
                         onPointerOut: () => hover(false),
                         onPointerUp: event => {
-                            event.target.releasePointerCapture(event.pointerId);
+                            const shouldReturnHome = !!dragged;
+                            try {
+                                event.target.releasePointerCapture(event.pointerId);
+                            } catch {}
                             drag(false);
+                            if (shouldReturnHome) returnToFirstPage();
                         },
                         onPointerDown: event => {
+                            event.stopPropagation();
                             event.target.setPointerCapture(event.pointerId);
                             const cardPosition = getFiniteTranslation(card.current);
                             if (cardPosition) drag(new THREE.Vector3().copy(event.point).sub(vec.copy(cardPosition)));
@@ -314,8 +326,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                     ),
                     cardFaceTexture && h(
                         "mesh",
-                        { position: [0, 0.42, -0.025], renderOrder: 3 },
-                        h("planeGeometry", { args: [0.68, 0.87] }),
+                        { position: [0, 0.4, -0.025], renderOrder: 3 },
+                        h("planeGeometry", { args: [0.56, 0.72] }),
                         h("meshBasicMaterial", {
                             map: cardFaceTexture,
                             transparent: true,
