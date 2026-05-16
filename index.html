@@ -16,6 +16,24 @@
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <link rel="stylesheet" href="./lanyard-island.css">
+
+    <!-- GitHub Pages 静态页使用裸模块名时需要 importmap；必须放在 lanyard-island.js 加载前 -->
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
+            "react-dom": "https://esm.sh/react-dom@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "three": "https://esm.sh/three@0.160.1",
+            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
+            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
+            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
+            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+        }
+    }
+    </script>
     <style>
         :root {
             --bg: #d7d6d2;
@@ -1784,7 +1802,7 @@
             const animationVideos = [
                 "https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4",
                 "https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4",
-                "https://cloud.video.taobao.com/vod/c1RulHROM3BtpCNFwVqVKF_BMDkzKR_AUeRr1rBCFMQ.mp4"
+                "https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4"
             ];
 
             let currentPage = "home";
@@ -2593,68 +2611,37 @@
     </script>
 
     <script>
-        /* v6: 只做“滚动解锁保险”，不改页面动画、不改卡片 class、不提前触发卡片显示。
-           原页面的 page3 卡片本来依赖滚动位置触发 .active；这里仅确保加载层结束后 body 能滚动，
-           并补发一次 scroll/resize，让原本的 updateScroll 逻辑自己接管。 */
+        /* v7: 延迟加载 3D 挂绳卡片。
+           不在首页启动 React/Three/Rapier，避免它抢主线程导致原页面滚动动效失效。
+           当滚到第 5 屏 page4 或 page4 被激活时，再加载 lanyard-island.js。 */
         (() => {
-            const unlock = () => {
-                document.body.style.overflow = "";
-                document.documentElement.style.overflow = "";
-                requestAnimationFrame(() => {
-                    window.dispatchEvent(new Event("resize"));
-                    window.dispatchEvent(new Event("scroll"));
-                    requestAnimationFrame(() => window.dispatchEvent(new Event("scroll")));
+            let lanyardLoaded = false;
+            const loadLanyard = () => {
+                if (lanyardLoaded) return;
+                const mount = document.getElementById("lanyard-root");
+                if (!mount) return;
+                lanyardLoaded = true;
+                import("./lanyard-island.js").catch(error => {
+                    lanyardLoaded = false;
+                    console.error("lanyard-island.js 加载失败：", error);
                 });
             };
 
-            const overlay = document.getElementById("loading-overlay");
-            if (!overlay) {
-                unlock();
-                return;
+            const page4 = document.getElementById("page4");
+            if (page4) {
+                new MutationObserver(() => {
+                    if (page4.classList.contains("active")) loadLanyard();
+                }).observe(page4, { attributes: true, attributeFilter: ["class"] });
             }
 
-            // 原脚本给 loading-overlay 加 fade-out 后再解锁，这里跟随原节奏。
-            const maybeUnlock = () => {
-                if (overlay.classList.contains("fade-out") || overlay.style.display === "none") {
-                    unlock();
-                }
-            };
+            window.addEventListener("scroll", () => {
+                if (window.scrollY >= window.innerHeight * 3.65) loadLanyard();
+            }, { passive: true });
 
-            overlay.addEventListener("transitionend", maybeUnlock, { passive: true });
-            new MutationObserver(maybeUnlock).observe(overlay, {
-                attributes: true,
-                attributeFilter: ["class", "style"]
+            document.addEventListener("DOMContentLoaded", () => {
+                if (window.scrollY >= window.innerHeight * 3.65 || page4?.classList.contains("active")) loadLanyard();
             });
-
-            // 兜底：远程图片/视频/CDN 卡住时，也只解锁滚动，不碰原动画。
-            setTimeout(() => {
-                overlay.classList.add("fade-out");
-                setTimeout(() => {
-                    overlay.style.display = "none";
-                    unlock();
-                }, 520);
-            }, 6200);
-
-            maybeUnlock();
         })();
     </script>
-
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-            "react-dom": "https://esm.sh/react-dom@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "three": "https://esm.sh/three@0.160.1",
-            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
-            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
-            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
-            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
-        }
-    }
-    </script>
-    <script type="module" src="./lanyard-island.js"></script>
 </body>
 </html>
