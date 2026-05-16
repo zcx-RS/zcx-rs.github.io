@@ -27,7 +27,7 @@ function getFiniteTranslation(body) {
 }
 
 function Lanyard({
-    position = [0, 0, 30],
+    position = [0, 0, 24],
     gravity = [0, -40, 0],
     fov = 20,
     transparent = true,
@@ -216,8 +216,8 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
     curve.curveType = "chordal";
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;
-    const anchorY = isMobile ? 5.05 : 4.75;
-    const cardScale = isMobile ? 2.95 : 2.9;
+    const anchorY = isMobile ? 3.95 : 3.65;
+    const cardScale = 2.25;
 
     return h(
         React.Fragment,
@@ -282,7 +282,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                 useMap: true,
                 map: texture,
                 repeat: [-4, 1],
-                lineWidth: isMobile ? 1.12 : 1.1
+                lineWidth: 1
             })
         )
     );
