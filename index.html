@@ -16,8 +16,6 @@
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <link rel="stylesheet" href="./lanyard-island.css">
-
-    <!-- GitHub Pages 静态页使用裸模块名时需要 importmap；必须放在任何 lanyard 模块加载前 -->
     <script type="importmap">
     {
         "imports": {
@@ -2611,71 +2609,75 @@
     </script>
 
     <script>
-    /* v8 安全补丁：不改原始动画，只做两件事：
-       1) 加载层消失后确保首页滚动被解锁；
-       2) 如果原始滚动监听因某个资源/模块异常中断，补一次 page3/page4 激活状态。
-       3D 挂绳延迟到第 5 屏再加载，避免抢主页面动画。 */
     (() => {
-        const $ = id => document.getElementById(id);
-        const loading = $("loading-overlay");
-        const page1 = $("page1");
-        const pageWork = $("pageWork");
-        const page2 = $("page2");
-        const page3 = $("page3");
-        const page4 = $("page4");
-        let lanyardLoaded = false;
+        // v9: 不改原始动画，只做两个独立保险：
+        // 1) page3/page4 的 active 状态由滚动位置兜底同步，避免卡片页丢失；
+        // 2) 3D 挂绳只在进入最后一屏后加载，避免抢首页/作品卡片动画。
+        const screenCount = 5;
+        let lanyardStarted = false;
+        let raf = 0;
 
-        function hasActiveDetail() {
-            return !!document.querySelector(".detail-page.active");
+        function vh() {
+            return window.innerHeight || document.documentElement.clientHeight || 1;
         }
-        function loadingGone() {
-            return !loading || loading.classList.contains("fade-out") || loading.style.display === "none";
+
+        function unlockHomeScrollIfNeeded() {
+            if (!document.body.classList.contains('detail-scroll-mode')) {
+                const overlay = document.getElementById('loading-overlay');
+                const overlayGone = !overlay || overlay.classList.contains('fade-out') || overlay.style.display === 'none';
+                if (overlayGone && document.body.style.overflow === 'hidden') {
+                    document.body.style.overflow = '';
+                }
+                const expectedHeight = screenCount * vh();
+                if (document.body.style.height !== expectedHeight + 'px') {
+                    document.body.style.height = expectedHeight + 'px';
+                }
+            }
         }
-        function unlockHomeScroll() {
-            if (!loadingGone() || hasActiveDetail()) return;
-            document.body.style.overflow = "";
-            document.body.style.height = "";
-            document.body.classList.remove("detail-scroll-mode");
-        }
-        function loadLanyardOnce() {
-            if (lanyardLoaded || !$("lanyard-root")) return;
-            lanyardLoaded = true;
-            import("./lanyard-island.js").catch(err => {
-                console.error("lanyard-island.js 加载失败：", err);
+
+        function startLanyard() {
+            if (lanyardStarted) return;
+            const root = document.getElementById('lanyard-root');
+            if (!root) return;
+            lanyardStarted = true;
+            import('./lanyard-island.js').catch(err => {
+                lanyardStarted = false;
+                console.warn('lanyard-island load failed:', err);
             });
         }
-        function syncHomeScreens() {
-            if (hasActiveDetail()) return;
-            unlockHomeScroll();
-            const vh = window.innerHeight || document.documentElement.clientHeight || 1;
-            const y = window.scrollY || document.documentElement.scrollTop || 0;
 
-            if (pageWork) pageWork.classList.toggle("active", y >= vh && y < 2 * vh);
-            if (page2) page2.classList.toggle("active", y >= 2 * vh && y < 3 * vh);
-            if (page3) page3.classList.toggle("active", y >= 3 * vh && y < 4 * vh);
-            if (page4) page4.classList.toggle("active", y >= 4 * vh);
+        function sync() {
+            raf = 0;
+            if (document.body.classList.contains('detail-scroll-mode')) return;
+            unlockHomeScrollIfNeeded();
 
-            if (page1 && y >= vh) page1.classList.add("hidden");
-            else if (page1) page1.classList.remove("hidden");
+            const y = window.scrollY || window.pageYOffset || 0;
+            const h = vh();
+            const page3 = document.getElementById('page3');
+            const page4 = document.getElementById('page4');
 
-            if (y >= 4 * vh || page4?.classList.contains("active")) loadLanyardOnce();
+            // 用 8px 容差避免 scroll-snap 停在边界导致 active 丢失。
+            const inPage3 = y >= 3 * h - 8 && y < 4 * h - 8;
+            const inPage4 = y >= 4 * h - 8;
+
+            if (page3) page3.classList.toggle('active', inPage3);
+            if (page4) page4.classList.toggle('active', inPage4);
+            if (inPage4) startLanyard();
         }
+
         function scheduleSync() {
-            requestAnimationFrame(syncHomeScreens);
-            setTimeout(syncHomeScreens, 80);
+            if (!raf) raf = requestAnimationFrame(sync);
         }
 
-        window.addEventListener("scroll", scheduleSync, { passive: true });
-        window.addEventListener("resize", scheduleSync, { passive: true });
-        window.addEventListener("pageshow", scheduleSync);
-        document.addEventListener("visibilitychange", scheduleSync);
+        window.addEventListener('scroll', scheduleSync, { passive: true });
+        window.addEventListener('resize', scheduleSync, { passive: true });
+        window.addEventListener('load', scheduleSync, { passive: true });
+        document.addEventListener('DOMContentLoaded', scheduleSync, { once: true });
 
-        if (loading && "MutationObserver" in window) {
-            new MutationObserver(scheduleSync).observe(loading, { attributes: true, attributeFilter: ["class", "style"] });
-        }
-        [500, 1200, 2500, 4200, 6200].forEach(ms => setTimeout(scheduleSync, ms));
+        // 加载页兜底：只在 5.5 秒后补一次，不提前破坏原动画节奏。
+        setTimeout(scheduleSync, 5500);
+        setInterval(scheduleSync, 1200);
     })();
     </script>
-
 </body>
 </html>
