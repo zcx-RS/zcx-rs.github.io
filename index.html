@@ -15,22 +15,6 @@
     <link rel="apple-touch-icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp">
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-            "react-dom": "https://esm.sh/react-dom@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "three": "https://esm.sh/three@0.160.1",
-            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
-            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
-            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
-            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
-        }
-    }
-    </script>
     <link rel="stylesheet" href="./lanyard-island.css">
     <style>
         :root {
@@ -2608,61 +2592,68 @@
         })();
     </script>
 
-
     <script>
-        // v5：保留原始滚动动效，只负责在加载层结束/异常时释放首页滚动。
+        /* v6: 只做“滚动解锁保险”，不改页面动画、不改卡片 class、不提前触发卡片显示。
+           原页面的 page3 卡片本来依赖滚动位置触发 .active；这里仅确保加载层结束后 body 能滚动，
+           并补发一次 scroll/resize，让原本的 updateScroll 逻辑自己接管。 */
         (() => {
-            const overlay = document.getElementById("loading-overlay");
-            let unlocked = false;
-
-            function unlockHomeScroll() {
-                if (unlocked) return;
-                if (document.body.classList.contains("detail-scroll-mode")) return;
-                unlocked = true;
+            const unlock = () => {
                 document.body.style.overflow = "";
-                document.body.style.height = "";
-                document.documentElement.classList.add("home-scroll-snap");
-                window.dispatchEvent(new Event("scroll"));
-                setTimeout(() => window.dispatchEvent(new Event("scroll")), 80);
-            }
-
-            function overlayFinished() {
-                if (!overlay) return true;
-                const style = window.getComputedStyle(overlay);
-                return overlay.classList.contains("fade-out") ||
-                    style.display === "none" ||
-                    style.visibility === "hidden" ||
-                    Number(style.opacity) === 0;
-            }
-
-            function checkAndUnlock() {
-                if (overlayFinished()) {
-                    setTimeout(unlockHomeScroll, 520);
-                }
-            }
-
-            if (overlay && "MutationObserver" in window) {
-                new MutationObserver(checkAndUnlock).observe(overlay, {
-                    attributes: true,
-                    attributeFilter: ["class", "style"]
+                document.documentElement.style.overflow = "";
+                requestAnimationFrame(() => {
+                    window.dispatchEvent(new Event("resize"));
+                    window.dispatchEvent(new Event("scroll"));
+                    requestAnimationFrame(() => window.dispatchEvent(new Event("scroll")));
                 });
+            };
+
+            const overlay = document.getElementById("loading-overlay");
+            if (!overlay) {
+                unlock();
+                return;
             }
 
-            checkAndUnlock();
-
-            // 绝对兜底：即使远程资源拖住原始加载流程，也不要让页面永久不能滚到卡片。
-            setTimeout(() => {
-                if (overlay && !overlayFinished()) {
-                    overlay.classList.add("fade-out");
-                    setTimeout(() => {
-                        overlay.style.display = "none";
-                        unlockHomeScroll();
-                    }, 520);
-                } else {
-                    unlockHomeScroll();
+            // 原脚本给 loading-overlay 加 fade-out 后再解锁，这里跟随原节奏。
+            const maybeUnlock = () => {
+                if (overlay.classList.contains("fade-out") || overlay.style.display === "none") {
+                    unlock();
                 }
-            }, 5200);
+            };
+
+            overlay.addEventListener("transitionend", maybeUnlock, { passive: true });
+            new MutationObserver(maybeUnlock).observe(overlay, {
+                attributes: true,
+                attributeFilter: ["class", "style"]
+            });
+
+            // 兜底：远程图片/视频/CDN 卡住时，也只解锁滚动，不碰原动画。
+            setTimeout(() => {
+                overlay.classList.add("fade-out");
+                setTimeout(() => {
+                    overlay.style.display = "none";
+                    unlock();
+                }, 520);
+            }, 6200);
+
+            maybeUnlock();
         })();
+    </script>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
+            "react-dom": "https://esm.sh/react-dom@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "three": "https://esm.sh/three@0.160.1",
+            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
+            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
+            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
+            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+        }
+    }
     </script>
     <script type="module" src="./lanyard-island.js"></script>
 </body>
