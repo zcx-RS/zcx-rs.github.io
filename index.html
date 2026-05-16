@@ -17,7 +17,7 @@
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <link rel="stylesheet" href="./lanyard-island.css">
 
-    <!-- GitHub Pages 静态页使用裸模块名时需要 importmap；必须放在 lanyard-island.js 加载前 -->
+    <!-- GitHub Pages 静态页使用裸模块名时需要 importmap；必须放在任何 lanyard 模块加载前 -->
     <script type="importmap">
     {
         "imports": {
@@ -2611,37 +2611,71 @@
     </script>
 
     <script>
-        /* v7: 延迟加载 3D 挂绳卡片。
-           不在首页启动 React/Three/Rapier，避免它抢主线程导致原页面滚动动效失效。
-           当滚到第 5 屏 page4 或 page4 被激活时，再加载 lanyard-island.js。 */
-        (() => {
-            let lanyardLoaded = false;
-            const loadLanyard = () => {
-                if (lanyardLoaded) return;
-                const mount = document.getElementById("lanyard-root");
-                if (!mount) return;
-                lanyardLoaded = true;
-                import("./lanyard-island.js").catch(error => {
-                    lanyardLoaded = false;
-                    console.error("lanyard-island.js 加载失败：", error);
-                });
-            };
+    /* v8 安全补丁：不改原始动画，只做两件事：
+       1) 加载层消失后确保首页滚动被解锁；
+       2) 如果原始滚动监听因某个资源/模块异常中断，补一次 page3/page4 激活状态。
+       3D 挂绳延迟到第 5 屏再加载，避免抢主页面动画。 */
+    (() => {
+        const $ = id => document.getElementById(id);
+        const loading = $("loading-overlay");
+        const page1 = $("page1");
+        const pageWork = $("pageWork");
+        const page2 = $("page2");
+        const page3 = $("page3");
+        const page4 = $("page4");
+        let lanyardLoaded = false;
 
-            const page4 = document.getElementById("page4");
-            if (page4) {
-                new MutationObserver(() => {
-                    if (page4.classList.contains("active")) loadLanyard();
-                }).observe(page4, { attributes: true, attributeFilter: ["class"] });
-            }
-
-            window.addEventListener("scroll", () => {
-                if (window.scrollY >= window.innerHeight * 3.65) loadLanyard();
-            }, { passive: true });
-
-            document.addEventListener("DOMContentLoaded", () => {
-                if (window.scrollY >= window.innerHeight * 3.65 || page4?.classList.contains("active")) loadLanyard();
+        function hasActiveDetail() {
+            return !!document.querySelector(".detail-page.active");
+        }
+        function loadingGone() {
+            return !loading || loading.classList.contains("fade-out") || loading.style.display === "none";
+        }
+        function unlockHomeScroll() {
+            if (!loadingGone() || hasActiveDetail()) return;
+            document.body.style.overflow = "";
+            document.body.style.height = "";
+            document.body.classList.remove("detail-scroll-mode");
+        }
+        function loadLanyardOnce() {
+            if (lanyardLoaded || !$("lanyard-root")) return;
+            lanyardLoaded = true;
+            import("./lanyard-island.js").catch(err => {
+                console.error("lanyard-island.js 加载失败：", err);
             });
-        })();
+        }
+        function syncHomeScreens() {
+            if (hasActiveDetail()) return;
+            unlockHomeScroll();
+            const vh = window.innerHeight || document.documentElement.clientHeight || 1;
+            const y = window.scrollY || document.documentElement.scrollTop || 0;
+
+            if (pageWork) pageWork.classList.toggle("active", y >= vh && y < 2 * vh);
+            if (page2) page2.classList.toggle("active", y >= 2 * vh && y < 3 * vh);
+            if (page3) page3.classList.toggle("active", y >= 3 * vh && y < 4 * vh);
+            if (page4) page4.classList.toggle("active", y >= 4 * vh);
+
+            if (page1 && y >= vh) page1.classList.add("hidden");
+            else if (page1) page1.classList.remove("hidden");
+
+            if (y >= 4 * vh || page4?.classList.contains("active")) loadLanyardOnce();
+        }
+        function scheduleSync() {
+            requestAnimationFrame(syncHomeScreens);
+            setTimeout(syncHomeScreens, 80);
+        }
+
+        window.addEventListener("scroll", scheduleSync, { passive: true });
+        window.addEventListener("resize", scheduleSync, { passive: true });
+        window.addEventListener("pageshow", scheduleSync);
+        document.addEventListener("visibilitychange", scheduleSync);
+
+        if (loading && "MutationObserver" in window) {
+            new MutationObserver(scheduleSync).observe(loading, { attributes: true, attributeFilter: ["class", "style"] });
+        }
+        [500, 1200, 2500, 4200, 6200].forEach(ms => setTimeout(scheduleSync, ms));
+    })();
     </script>
+
 </body>
 </html>
