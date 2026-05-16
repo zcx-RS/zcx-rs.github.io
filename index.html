@@ -16,21 +16,21 @@
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <script type="importmap">
-        {
-            "imports": {
-                "react": "https://esm.sh/react@18.3.1",
-                "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-                "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-                "react-dom": "https://esm.sh/react-dom@18.3.1",
-                "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-                "three": "https://esm.sh/three@0.160.1",
-                "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
-                "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
-                "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
-                "meshline": "https://esm.sh/meshline@3.3.1?external=three"
-            }
+    {
+        "imports": {
+            "react": "https://esm.sh/react@18.3.1",
+            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
+            "react-dom": "https://esm.sh/react-dom@18.3.1",
+            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+            "three": "https://esm.sh/three@0.160.1",
+            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
+            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
+            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
+            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
         }
-        </script>
+    }
+    </script>
     <link rel="stylesheet" href="./lanyard-island.css">
     <style>
         :root {
@@ -2607,41 +2607,61 @@
             updateScroll();
         })();
     </script>
-    
+
 
     <script>
-        // v4 安全兜底：不提前打断原始动效，只在加载层已经结束或超时异常时释放首页滚动。
+        // v5：保留原始滚动动效，只负责在加载层结束/异常时释放首页滚动。
         (() => {
-            const unlockHomeScroll = () => {
+            const overlay = document.getElementById("loading-overlay");
+            let unlocked = false;
+
+            function unlockHomeScroll() {
+                if (unlocked) return;
                 if (document.body.classList.contains("detail-scroll-mode")) return;
+                unlocked = true;
                 document.body.style.overflow = "";
+                document.body.style.height = "";
                 document.documentElement.classList.add("home-scroll-snap");
                 window.dispatchEvent(new Event("scroll"));
-            };
-            window.addEventListener("load", () => {
-                setTimeout(() => {
-                    const overlay = document.getElementById("loading-overlay");
-                    if (!overlay) return unlockHomeScroll();
-                    const style = window.getComputedStyle(overlay);
-                    if (overlay.classList.contains("fade-out") || style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) {
+                setTimeout(() => window.dispatchEvent(new Event("scroll")), 80);
+            }
+
+            function overlayFinished() {
+                if (!overlay) return true;
+                const style = window.getComputedStyle(overlay);
+                return overlay.classList.contains("fade-out") ||
+                    style.display === "none" ||
+                    style.visibility === "hidden" ||
+                    Number(style.opacity) === 0;
+            }
+
+            function checkAndUnlock() {
+                if (overlayFinished()) {
+                    setTimeout(unlockHomeScroll, 520);
+                }
+            }
+
+            if (overlay && "MutationObserver" in window) {
+                new MutationObserver(checkAndUnlock).observe(overlay, {
+                    attributes: true,
+                    attributeFilter: ["class", "style"]
+                });
+            }
+
+            checkAndUnlock();
+
+            // 绝对兜底：即使远程资源拖住原始加载流程，也不要让页面永久不能滚到卡片。
+            setTimeout(() => {
+                if (overlay && !overlayFinished()) {
+                    overlay.classList.add("fade-out");
+                    setTimeout(() => {
+                        overlay.style.display = "none";
                         unlockHomeScroll();
-                    }
-                }, 900);
-                setTimeout(() => {
-                    const overlay = document.getElementById("loading-overlay");
-                    if (!overlay) return unlockHomeScroll();
-                    const style = window.getComputedStyle(overlay);
-                    if (!overlay.classList.contains("fade-out") && style.display !== "none") {
-                        overlay.classList.add("fade-out");
-                        setTimeout(() => {
-                            overlay.style.display = "none";
-                            unlockHomeScroll();
-                        }, 520);
-                    } else {
-                        unlockHomeScroll();
-                    }
-                }, 5200);
-            }, { once: true });
+                    }, 520);
+                } else {
+                    unlockHomeScroll();
+                }
+            }, 5200);
         })();
     </script>
     <script type="module" src="./lanyard-island.js"></script>
