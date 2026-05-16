@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN" class="home-scroll-snap">
 <head>
@@ -15,6 +16,22 @@
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <link rel="stylesheet" href="./lanyard-island.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.3.1",
+                "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+                "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
+                "react-dom": "https://esm.sh/react-dom@18.3.1",
+                "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+                "three": "https://esm.sh/three@0.160.1",
+                "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
+                "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
+                "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
+                "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+            }
+        }
+        </script>
     <style>
         :root {
             --bg: #d7d6d2;
@@ -2590,22 +2607,49 @@
             updateScroll();
         })();
     </script>
-    <script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-            "react-dom": "https://esm.sh/react-dom@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "three": "https://esm.sh/three@0.160.1",
-            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
-            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
-            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
-            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+
+    <script>
+    // GitHub Pages 兜底修复：避免资源、模块或 CDN 加载异常导致首屏一直停在 0%
+    (function () {
+        function forceEnterPage() {
+            var overlay = document.getElementById("loading-overlay");
+            var fill = document.getElementById("loadProgressFill") || document.querySelector(".load-progress-fill");
+            var text = document.getElementById("loadProgressText") || document.querySelector(".load-progress-text");
+
+            if (fill) fill.style.width = "100%";
+            if (text) text.textContent = "100%";
+
+            if (overlay) {
+                overlay.classList.add("fade-out");
+                setTimeout(function () {
+                    overlay.style.display = "none";
+                    overlay.style.pointerEvents = "none";
+                }, 520);
+            }
+
+            document.body.style.overflow = "";
         }
-    }
+
+        window.addEventListener("load", function () {
+            setTimeout(forceEnterPage, 300);
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            setTimeout(forceEnterPage, 4500);
+        });
+
+        window.addEventListener("error", function (event) {
+            var target = event && event.target;
+            var isResourceError = target && (target.tagName === "IMG" || target.tagName === "VIDEO" || target.tagName === "SCRIPT" || target.tagName === "LINK");
+            if (isResourceError) setTimeout(forceEnterPage, 800);
+        }, true);
+
+        window.addEventListener("unhandledrejection", function () {
+            setTimeout(forceEnterPage, 800);
+        });
+    })();
     </script>
+
     <script type="module" src="./lanyard-island.js"></script>
 </body>
 </html>
