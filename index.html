@@ -15,22 +15,22 @@
     <link rel="apple-touch-icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp">
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
-<script type="importmap">
-    {
-        "imports": {
-            "react": "https://esm.sh/react@18.3.1",
-            "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
-            "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
-            "react-dom": "https://esm.sh/react-dom@18.3.1",
-            "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
-            "three": "https://esm.sh/three@0.160.1",
-            "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
-            "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
-            "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
-            "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+    <script type="importmap">
+        {
+            "imports": {
+                "react": "https://esm.sh/react@18.3.1",
+                "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+                "react/jsx-dev-runtime": "https://esm.sh/react@18.3.1/jsx-dev-runtime",
+                "react-dom": "https://esm.sh/react-dom@18.3.1",
+                "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+                "three": "https://esm.sh/three@0.160.1",
+                "@react-three/fiber": "https://esm.sh/@react-three/fiber@8.17.10?external=react,react-dom,three",
+                "@react-three/drei": "https://esm.sh/@react-three/drei@9.122.0?external=react,react-dom,three,@react-three/fiber",
+                "@react-three/rapier": "https://esm.sh/@react-three/rapier@1.5.0?external=react,react-dom,three,@react-three/fiber",
+                "meshline": "https://esm.sh/meshline@3.3.1?external=three"
+            }
         }
-    }
-    </script>
+        </script>
     <link rel="stylesheet" href="./lanyard-island.css">
     <style>
         :root {
@@ -2580,14 +2580,9 @@
                     ticking = true;
                 }
             }, { passive: true });
-            window.addEventListener("wheel", event => {
-                if (currentPage !== "home") return;
-                if (document.body.style.overflow === "hidden") document.body.style.overflow = "";
-            }, { passive: true });
             if ("scrollRestoration" in history) history.scrollRestoration = "manual";
             window.scrollTo(0, 0);
-            // 首页需要允许滚动，否则下面的作品卡片页无法进入
-            document.body.style.overflow = "";
+            document.body.style.overflow = "hidden";
             setProgress(5);
             Promise.all([
                 Promise.race([
@@ -2610,6 +2605,43 @@
                 }
             }, isMobile() ? 3600 : 5000);
             updateScroll();
+        })();
+    </script>
+    
+
+    <script>
+        // v4 安全兜底：不提前打断原始动效，只在加载层已经结束或超时异常时释放首页滚动。
+        (() => {
+            const unlockHomeScroll = () => {
+                if (document.body.classList.contains("detail-scroll-mode")) return;
+                document.body.style.overflow = "";
+                document.documentElement.classList.add("home-scroll-snap");
+                window.dispatchEvent(new Event("scroll"));
+            };
+            window.addEventListener("load", () => {
+                setTimeout(() => {
+                    const overlay = document.getElementById("loading-overlay");
+                    if (!overlay) return unlockHomeScroll();
+                    const style = window.getComputedStyle(overlay);
+                    if (overlay.classList.contains("fade-out") || style.display === "none" || style.visibility === "hidden" || Number(style.opacity) === 0) {
+                        unlockHomeScroll();
+                    }
+                }, 900);
+                setTimeout(() => {
+                    const overlay = document.getElementById("loading-overlay");
+                    if (!overlay) return unlockHomeScroll();
+                    const style = window.getComputedStyle(overlay);
+                    if (!overlay.classList.contains("fade-out") && style.display !== "none") {
+                        overlay.classList.add("fade-out");
+                        setTimeout(() => {
+                            overlay.style.display = "none";
+                            unlockHomeScroll();
+                        }, 520);
+                    } else {
+                        unlockHomeScroll();
+                    }
+                }, 5200);
+            }, { once: true });
         })();
     </script>
     <script type="module" src="./lanyard-island.js"></script>
