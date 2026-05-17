@@ -54,6 +54,12 @@
             scroll-snap-align: start;
             scroll-snap-stop: always;
         }
+        @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+            .scroll-snap-track .snap-section:nth-child(5),
+            .page4 {
+                display: none !important;
+            }
+        }
         body.detail-scroll-mode .scroll-snap-track { display: none; }
         html, body, .detail-page, .page-work {
             scrollbar-width: thin;
@@ -1723,8 +1729,10 @@
         (() => {
             const screenCount = 5;
             const mobileQuery = window.matchMedia("(max-width: 768px)");
+            const desktopSnapQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
             const isMobileDevice = /Android|iPhone|iPad|iPod|webOS/i.test(navigator.userAgent);
             const isMobile = () => mobileQuery.matches || isMobileDevice;
+            const homeScreenCount = () => isMobile() ? 4 : screenCount;
             const page1 = document.getElementById("page1");
             const pageWork = document.getElementById("pageWork");
             const page2 = document.getElementById("page2");
@@ -1805,6 +1813,8 @@
             let wasInWork = false;
             let complete = false;
             let warmupStarted = false;
+            let snapAnimating = false;
+            let snapAnimationFrame = 0;
 
             function escapeHtml(value) {
                 return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -1818,7 +1828,7 @@
                     document.body.style.height = "auto";
                     return;
                 }
-                document.body.style.height = `${screenCount * window.innerHeight}px`;
+                document.body.style.height = `${homeScreenCount() * window.innerHeight}px`;
             }
             function setHomeSnapEnabled(enabled) {
                 if (enabled && !document.body.classList.contains("detail-scroll-mode")) document.documentElement.classList.add("home-scroll-snap");
@@ -2406,6 +2416,50 @@
                 event.preventDefault();
                 navigateTo(3 * vh);
             });
+            function smoothHomeScrollTo(targetY) {
+                const root = document.documentElement;
+                const startY = scrollY;
+                const distance = targetY - startY;
+                const previousScrollBehavior = root.style.scrollBehavior;
+                const previousScrollSnapType = root.style.scrollSnapType;
+                const duration = Math.min(900, Math.max(520, Math.abs(distance) * 0.55));
+                const startTime = performance.now();
+                const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+                cancelAnimationFrame(snapAnimationFrame);
+                snapAnimating = true;
+                root.style.scrollBehavior = "auto";
+                root.style.scrollSnapType = "none";
+
+                function finish() {
+                    window.scrollTo(0, targetY);
+                    root.style.scrollBehavior = previousScrollBehavior;
+                    root.style.scrollSnapType = previousScrollSnapType;
+                    updateScroll();
+                    window.setTimeout(() => { snapAnimating = false; }, 80);
+                }
+
+                function step(now) {
+                    const t = Math.min(1, (now - startTime) / duration);
+                    window.scrollTo(0, startY + distance * easeInOutCubic(t));
+                    updateScroll();
+                    if (t < 1) snapAnimationFrame = requestAnimationFrame(step);
+                    else finish();
+                }
+
+                snapAnimationFrame = requestAnimationFrame(step);
+            }
+            window.addEventListener("wheel", event => {
+                if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches || Math.abs(event.deltaY) < 6 || event.ctrlKey) return;
+                const maxIndex = homeScreenCount() - 1;
+                const currentIndex = Math.round(scrollY / vh);
+                const direction = event.deltaY > 0 ? 1 : -1;
+                const targetIndex = Math.max(0, Math.min(maxIndex, currentIndex + direction));
+                if (targetIndex === currentIndex && Math.abs(scrollY - currentIndex * vh) < 2) return;
+                event.preventDefault();
+                if (snapAnimating) return;
+                smoothHomeScrollTo(targetIndex * vh);
+            }, { passive: false });
             document.addEventListener("mousemove", event => {
                 lastMouseX = event.clientX;
                 lastMouseY = event.clientY;
@@ -2471,7 +2525,7 @@
                 if (returningHome) return;
                 returningHome = true;
                 setHomeSnapEnabled(false);
-                const returnY = Math.max(0, Math.min(savedScrollY || 0, (screenCount - 1) * vh));
+                const returnY = Math.max(0, Math.min(savedScrollY || 0, (homeScreenCount() - 1) * vh));
                 closeAnimationModal();
                 document.querySelectorAll(".detail-page video").forEach(video => {
                     video.pause();
@@ -2547,7 +2601,7 @@
                     page3.classList.remove("active");
                     document.querySelectorAll(".page3 video").forEach(video => video.pause());
                 }
-                if (sY >= 4 * vh) {
+                if (!isMobile() && sY >= 4 * vh) {
                     page4.classList.add("active");
                 } else {
                     page4.classList.remove("active");
