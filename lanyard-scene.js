@@ -352,7 +352,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                     cardFaceTexture && h(
                         "mesh",
                         { position: [0, 0.52, -0.025], renderOrder: 3 },
-                        h("planeGeometry", { args: [0.62, 0.79] }),
+                        h("planeGeometry", { args: [0.68, 0.86] }),
                         h("meshBasicMaterial", {
                             map: cardFaceTexture,
                             transparent: true,

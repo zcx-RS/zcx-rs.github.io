@@ -35,24 +35,24 @@
 .lanyard-drag-hint {
     position: absolute;
     left: 50%;
-    bottom: max(6px, calc(env(safe-area-inset-bottom) + 0.5vh));
-    z-index: 2;
-    transform: translateX(-50%);
+    top: 50%;
+    z-index: 0;
+    transform: translate(-50%, -50%) scale(0.98);
     pointer-events: none;
-    color: #111;
-    font-size: clamp(1.1rem, 2.1vw, 1.85rem);
-    font-weight: 800;
+    color: rgba(128, 128, 128, 0.5);
+    font-size: clamp(5rem, 16vw, 15rem);
+    font-weight: 900;
     letter-spacing: 0;
-    line-height: 1;
+    line-height: 0.9;
     white-space: nowrap;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.34);
     opacity: 0;
+    user-select: none;
     transition: opacity 0.35s ease, transform 0.35s ease;
 }
 
 .page4.active .lanyard-drag-hint {
-    opacity: 0.92;
-    transform: translateX(-50%) translateY(-4px);
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
 }
 
 @media (max-width: 768px) {
@@ -63,7 +63,6 @@
     }
 
     .lanyard-drag-hint {
-        bottom: max(22px, calc(env(safe-area-inset-bottom) + 4.5vh));
-        font-size: clamp(1rem, 5vw, 1.35rem);
+        font-size: clamp(3rem, 18vw, 6.2rem);
     }
 }
