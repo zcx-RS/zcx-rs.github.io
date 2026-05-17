@@ -2510,6 +2510,7 @@
                 page2.classList.remove("active");
                 page3.classList.remove("active");
                 page4.classList.remove("active");
+                activeHomeSection = -1;
                 setHomeSnapEnabled(false);
                 document.body.classList.remove("smile-cursor");
                 const targetDetail = document.getElementById(id);
@@ -2571,6 +2572,7 @@
                 document.body.classList.remove("detail-scroll-mode", "smile-cursor");
                 document.body.style.overflow = "";
                 setPageHeight();
+                activeHomeSection = -1;
                 loopActive = false;
                 clearTimers();
                 requestAnimationFrame(() => {
