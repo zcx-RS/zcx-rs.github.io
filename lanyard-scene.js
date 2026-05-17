@@ -74,20 +74,32 @@ function useSafeTexture(url, options = {}) {
 function returnToFirstPage(delay = 0) {
     window.setTimeout(() => {
         document.body.classList.remove("smile-cursor");
+        const root = document.documentElement;
+        const previousScrollBehavior = root.style.scrollBehavior;
+        const previousScrollSnapType = root.style.scrollSnapType;
         const startY = window.scrollY;
-        const duration = 780;
+        const duration = 500;
         const startTime = performance.now();
-        const easeOutBack = t => {
-            const c1 = 1.70158;
-            const c3 = c1 + 1;
-            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-        };
+        const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
+
+        root.style.scrollBehavior = "auto";
+        root.style.scrollSnapType = "none";
+
+        function restoreScrollStyles() {
+            root.style.scrollBehavior = previousScrollBehavior;
+            root.style.scrollSnapType = previousScrollSnapType;
+        }
 
         function step(now) {
             const t = Math.min(1, (now - startTime) / duration);
-            const eased = Math.min(1, Math.max(0, easeOutBack(t)));
+            const eased = easeOutQuint(t);
             window.scrollTo(0, Math.max(0, startY * (1 - eased)));
-            if (t < 1 && window.scrollY > 0) requestAnimationFrame(step);
+            if (t < 1 && window.scrollY > 0) {
+                requestAnimationFrame(step);
+            } else {
+                window.scrollTo(0, 0);
+                requestAnimationFrame(restoreScrollStyles);
+            }
         }
 
         requestAnimationFrame(step);
@@ -330,11 +342,11 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                                 requestAnimationFrame(() => {
                                     requestAnimationFrame(() => {
                                         card.current?.wakeUp();
-                                        card.current?.setLinvel?.({ x: 0, y: 18, z: 0 }, true);
-                                        card.current?.setAngvel?.({ x: -4, y: 0.8, z: 1.6 }, true);
+                                        card.current?.setLinvel?.({ x: 0, y: 36, z: 0 }, true);
+                                        card.current?.setAngvel?.({ x: -7.5, y: 1.3, z: 2.4 }, true);
                                     });
                                 });
-                                returnToFirstPage(220);
+                                returnToFirstPage(280);
                             }
                         },
                         onPointerDown: event => {
@@ -352,7 +364,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                     cardFaceTexture && h(
                         "mesh",
                         { position: [0, 0.52, -0.025], renderOrder: 3 },
-                        h("planeGeometry", { args: [0.68, 0.86] }),
+                        h("planeGeometry", { args: [1.02, 1.3] }),
                         h("meshBasicMaterial", {
                             map: cardFaceTexture,
                             transparent: true,
