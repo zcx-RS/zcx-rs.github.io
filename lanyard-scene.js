@@ -84,7 +84,7 @@ function returnToFirstPage(delay = 0) {
         const previousScrollBehavior = root.style.scrollBehavior;
         const previousScrollSnapType = root.style.scrollSnapType;
         const startY = window.scrollY;
-        const duration = 500;
+        const duration = 460;
         const startTime = performance.now();
         const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
 
@@ -349,11 +349,11 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                                 requestAnimationFrame(() => {
                                     requestAnimationFrame(() => {
                                         card.current?.wakeUp();
-                                        card.current?.setLinvel?.({ x: 0, y: 36, z: 0 }, true);
-                                        card.current?.setAngvel?.({ x: -7.5, y: 1.3, z: 2.4 }, true);
+                                        card.current?.setLinvel?.({ x: 0, y: 58, z: 0 }, true);
+                                        card.current?.setAngvel?.({ x: -10.5, y: 1.8, z: 3.2 }, true);
                                     });
                                 });
-                                returnToFirstPage(280);
+                                returnToFirstPage(360);
                             }
                         },
                         onPointerDown: event => {
