@@ -55,6 +55,15 @@
             scroll-snap-stop: always;
         }
         @media (max-width: 768px), (hover: none) and (pointer: coarse) {
+            html.home-scroll-snap {
+                scroll-snap-type: y proximity;
+                scroll-behavior: auto;
+            }
+
+            .snap-section {
+                scroll-snap-stop: normal;
+            }
+
             .scroll-snap-track .snap-section:nth-child(5),
             .page4 {
                 display: none !important;
@@ -1815,6 +1824,11 @@
             let warmupStarted = false;
             let snapAnimating = false;
             let snapAnimationFrame = 0;
+            let activeHomeSection = -1;
+            let page3VideosHydrated = false;
+            let lastViewportWidth = innerWidth;
+            let resizeRaf = 0;
+            const page3Videos = Array.from(page3.querySelectorAll("video"));
 
             function escapeHtml(value) {
                 return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
@@ -1833,6 +1847,9 @@
             function setHomeSnapEnabled(enabled) {
                 if (enabled && !document.body.classList.contains("detail-scroll-mode")) document.documentElement.classList.add("home-scroll-snap");
                 else document.documentElement.classList.remove("home-scroll-snap");
+            }
+            function setActive(element, active) {
+                element.classList.toggle("active", active);
             }
 
             function performCopy(text, toastEl) {
@@ -2572,6 +2589,44 @@
             });
             document.querySelectorAll(".back-btn").forEach(button => button.addEventListener("click", goBack));
 
+            function syncHomeSection(nextSection) {
+                if (nextSection === activeHomeSection) return;
+                const previousSection = activeHomeSection;
+                activeHomeSection = nextSection;
+
+                setActive(pageWork, nextSection === 1);
+                if (nextSection === 1) playWorkCards();
+                else if (previousSection === 1) resetWorkCards();
+                wasInWork = nextSection === 1;
+
+                setActive(page2, nextSection === 2);
+                if (nextSection === 2 && !loopActive) {
+                    loopActive = true;
+                    startSlotSpin();
+                } else if (previousSection === 2 && loopActive) {
+                    loopActive = false;
+                    clearTimers();
+                    yearEl.textContent = FINAL;
+                }
+
+                setActive(page3, nextSection === 3);
+                if (nextSection === 3) {
+                    scheduleWarmupDetailAssets();
+                    if (!page3VideosHydrated) {
+                        hydrateLazyVideos(page3, "play");
+                        page3VideosHydrated = true;
+                    }
+                    page3Videos.forEach(video => {
+                        video.muted = true;
+                        if (video.paused) video.play().catch(() => {});
+                    });
+                } else if (previousSection === 3) {
+                    page3Videos.forEach(video => video.pause());
+                }
+
+                setActive(page4, nextSection === 4);
+            }
+
             function updateScroll() {
                 if (currentPage !== "home") return;
                 const sY = scrollY;
@@ -2579,56 +2634,29 @@
                 page1.style.transform = `scale(${1 - progress * 0.3})`;
                 page1.style.opacity = 1 - progress;
                 const inWork = sY >= vh && sY < 2 * vh;
-                if (inWork) {
-                    pageWork.classList.add("active");
-                    if (!wasInWork) playWorkCards();
-                } else {
-                    pageWork.classList.remove("active");
-                    if (wasInWork) resetWorkCards();
-                }
-                wasInWork = inWork;
                 const inP2 = sY >= 2 * vh && sY < 3 * vh;
-                if (inP2) {
-                    page2.classList.add("active");
-                    if (!loopActive) {
-                        loopActive = true;
-                        startSlotSpin();
-                    }
-                } else {
-                    page2.classList.remove("active");
-                    if (loopActive) {
-                        loopActive = false;
-                        clearTimers();
-                        yearEl.textContent = FINAL;
-                    }
-                }
-                if (sY >= 3 * vh && sY < 4 * vh) {
-                    page3.classList.add("active");
-                    scheduleWarmupDetailAssets();
-                    hydrateLazyVideos(page3, "play");
-                    document.querySelectorAll(".page3 video").forEach(video => {
-                        video.muted = true;
-                        if (video.paused) video.play().catch(() => {});
-                    });
-                } else {
-                    page3.classList.remove("active");
-                    document.querySelectorAll(".page3 video").forEach(video => video.pause());
-                }
-                if (!isMobile() && sY >= 4 * vh) {
-                    page4.classList.add("active");
-                } else {
-                    page4.classList.remove("active");
-                }
+                const inP3 = sY >= 3 * vh && sY < 4 * vh;
+                const inP4 = !isMobile() && sY >= 4 * vh;
+                const nextSection = inWork ? 1 : inP2 ? 2 : inP3 ? 3 : inP4 ? 4 : 0;
+                syncHomeSection(nextSection);
                 document.body.classList.remove("smile-cursor");
             }
 
             setPageHeight();
-            window.addEventListener("resize", () => {
-                vh = innerHeight;
-                setPageHeight();
-                if (currentPage === "home") updateScroll();
-                if (currentPage.startsWith("detail")) hydrateDetailImages(document.getElementById(currentPage));
-            });
+            function handleViewportResize() {
+                cancelAnimationFrame(resizeRaf);
+                resizeRaf = requestAnimationFrame(() => {
+                    const widthChanged = Math.abs(innerWidth - lastViewportWidth) > 8;
+                    if (isMobile() && !widthChanged) return;
+                    lastViewportWidth = innerWidth;
+                    vh = innerHeight;
+                    activeHomeSection = -1;
+                    setPageHeight();
+                    if (currentPage === "home") updateScroll();
+                    if (currentPage.startsWith("detail")) hydrateDetailImages(document.getElementById(currentPage));
+                });
+            }
+            window.addEventListener("resize", handleViewportResize);
             window.addEventListener("scroll", () => {
                 if (currentPage !== "home") return;
                 if (!ticking) {
