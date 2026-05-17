@@ -31,7 +31,7 @@ function warmSceneModule() {
 }
 
 function warmSceneAssets() {
-    if (!mount || assetsWarmed) return;
+    if (!mount || assetsWarmed || shouldUseMobileFallback()) return;
     assetsWarmed = true;
     const { cardUrl, textureUrl, cardFaceUrl } = assetUrls();
     [
@@ -228,7 +228,7 @@ if (mount) {
 
     const requestIdle = window.requestIdleCallback?.bind(window) || (callback => window.setTimeout(callback, 1600));
     window.addEventListener("load", () => {
-        requestIdle(warmSceneAssets, { timeout: 4200 });
+        if (!shouldUseMobileFallback()) requestIdle(warmSceneAssets, { timeout: 4200 });
     }, { once: true });
 
     requestAnimationFrame(syncScene);

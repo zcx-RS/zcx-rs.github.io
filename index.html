@@ -1705,7 +1705,7 @@
                 <div class="lanyard-mobile-strap"></div>
                 <div class="lanyard-mobile-clip"></div>
                 <div class="lanyard-mobile-card">
-                    <img src="./card-face.png?v=20260517-8" alt="">
+                    <img data-src="./card-face.png?v=20260517-8" alt="">
                 </div>
             </div>
         </div>
@@ -2048,6 +2048,19 @@
             function scheduleWarmupDetailAssets() {
                 if (warmupStarted) return;
                 warmupStarted = true;
+                if (isMobile()) {
+                    requestIdleTask(() => {
+                        preloadImagesSequential([
+                            detailImageSources("detail1")[0],
+                            detailImageSources("detail2")[0],
+                            detailImageSources("detail3")[0]
+                        ], {
+                            highCount: 1,
+                            concurrency: 1
+                        });
+                    }, 1200);
+                    return;
+                }
                 requestIdleTask(() => {
                     ["detail1", "detail2", "detail3", "detail4"].forEach(id => renderDetail(id));
                     document.querySelectorAll(".detail-page img[data-src]").forEach(loadLazyImage);
@@ -2647,7 +2660,7 @@
             Promise.all([
                 Promise.race([
                     trackCriticalImages(),
-                    new Promise(resolve => setTimeout(resolve, isMobile() ? 1800 : 2400))
+                    new Promise(resolve => setTimeout(resolve, isMobile() ? 1400 : 2400))
                 ]),
                 new Promise(resolve => setTimeout(resolve, 180)),
                 new Promise(resolve => {
@@ -2663,7 +2676,7 @@
                 if (!complete) {
                     finishLoading();
                 }
-            }, isMobile() ? 3600 : 5000);
+            }, isMobile() ? 3000 : 5000);
             updateScroll();
         })();
     </script>
@@ -2683,6 +2696,6 @@
         }
     }
     </script>
-    <script type="module" src="./lanyard-island.js?v=20260517-8"></script>
+    <script type="module" src="./lanyard-island.js?v=20260517-9"></script>
 </body>
 </html>
