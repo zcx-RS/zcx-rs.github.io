@@ -284,7 +284,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
     });
 
     curve.curveType = "chordal";
-    const anchorY = 3.35;
+    const anchorY = isMobile ? 4.9 : 4.55;
     const cardScale = 2.25;
     const cardMaterialProps = {
         key: cardFaceTexture ? "card-plain" : "card-original",
