@@ -23,7 +23,7 @@ function pageIsActive() {
 
 function warmSceneModule() {
     if (!mount || sceneModulePromise) return sceneModulePromise;
-    sceneModulePromise = import("./lanyard-scene.js?v=20260517-7").catch(error => {
+    sceneModulePromise = import("./lanyard-scene.js?v=20260517-8").catch(error => {
         sceneModulePromise = null;
         throw error;
     });
@@ -124,7 +124,12 @@ function setupMobileFallback() {
         try {
             card.releasePointerCapture(event.pointerId);
         } catch {}
-        card.style.transform = "";
+        fallback.classList.remove("is-dragging");
+        fallback.style.removeProperty("--drag-x");
+        fallback.style.removeProperty("--drag-y");
+        fallback.style.removeProperty("--drag-r");
+        fallback.style.removeProperty("--clip-x");
+        fallback.style.removeProperty("--clip-y");
         fallback.classList.add("is-returning");
         returnToFirstPage(240);
         window.setTimeout(() => fallback.classList.remove("is-returning"), 820);
@@ -136,15 +141,20 @@ function setupMobileFallback() {
         startX = event.clientX;
         startY = event.clientY;
         fallback.classList.remove("is-returning");
+        fallback.classList.add("is-dragging");
         card.setPointerCapture(event.pointerId);
         event.preventDefault();
     });
 
     card.addEventListener("pointermove", event => {
         if (!dragging) return;
-        const dx = Math.max(-95, Math.min(95, event.clientX - startX));
-        const dy = Math.max(-115, Math.min(90, event.clientY - startY));
-        card.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${dx * 0.045}deg)`;
+        const dx = Math.max(-46, Math.min(46, event.clientX - startX));
+        const dy = Math.max(-52, Math.min(46, event.clientY - startY));
+        fallback.style.setProperty("--drag-x", `${dx}px`);
+        fallback.style.setProperty("--drag-y", `${dy}px`);
+        fallback.style.setProperty("--drag-r", `${dx * 0.03}deg`);
+        fallback.style.setProperty("--clip-x", `${dx * 0.35}px`);
+        fallback.style.setProperty("--clip-y", `${dy * 0.18}px`);
     });
 
     card.addEventListener("pointerup", release);

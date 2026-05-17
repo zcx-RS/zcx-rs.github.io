@@ -81,6 +81,11 @@
         display: block;
         pointer-events: none;
         touch-action: pan-y;
+        --drag-x: 0px;
+        --drag-y: 0px;
+        --drag-r: 0deg;
+        --clip-x: 0px;
+        --clip-y: 0px;
     }
 
     .page4:not(.active) .lanyard-mobile-fallback {
@@ -116,6 +121,7 @@
         border-bottom-width: 6px;
         border-radius: 16px;
         filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+        transition: transform 0.28s ease;
     }
 
     .lanyard-mobile-card {
@@ -136,6 +142,17 @@
         pointer-events: auto;
         touch-action: none;
         -webkit-tap-highlight-color: transparent;
+        transition: transform 0.28s cubic-bezier(0.2, 1, 0.22, 1);
+    }
+
+    .lanyard-mobile-fallback.is-dragging .lanyard-mobile-clip {
+        transform: translate(calc(-50% + var(--clip-x)), calc(-50% + var(--clip-y)));
+        transition: none;
+    }
+
+    .lanyard-mobile-fallback.is-dragging .lanyard-mobile-card {
+        transform: translate(calc(-50% + var(--drag-x)), calc(-50% + var(--drag-y))) rotate(var(--drag-r));
+        transition: none;
     }
 
     .lanyard-mobile-card::before {
@@ -163,7 +180,7 @@
     }
 
     .lanyard-mobile-fallback.is-returning .lanyard-mobile-card {
-        transition: transform 0.42s cubic-bezier(0.18, 1.5, 0.2, 1);
-        transform: translate(-50%, -112%) rotate(-8deg);
+        transition: transform 0.34s cubic-bezier(0.18, 1.35, 0.2, 1);
+        transform: translate(-50%, -74%) rotate(-5deg);
     }
 }
