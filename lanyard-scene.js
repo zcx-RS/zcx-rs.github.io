@@ -27,7 +27,7 @@ function getFiniteTranslation(body) {
 }
 
 function useSafeTexture(url, options = {}) {
-    const { flipY = true, repeat = false } = options;
+    const { flipY = true, repeat = false, crisp = false } = options;
     const [texture, setTexture] = useState(null);
 
     useEffect(() => {
@@ -52,6 +52,12 @@ function useSafeTexture(url, options = {}) {
                     nextTexture.wrapS = THREE.RepeatWrapping;
                     nextTexture.wrapT = THREE.RepeatWrapping;
                 }
+                if (crisp) {
+                    nextTexture.generateMipmaps = false;
+                    nextTexture.minFilter = THREE.LinearFilter;
+                    nextTexture.magFilter = THREE.NearestFilter;
+                    nextTexture.anisotropy = 16;
+                }
                 nextTexture.needsUpdate = true;
                 loadedTexture = nextTexture;
                 setTexture(nextTexture);
@@ -66,7 +72,7 @@ function useSafeTexture(url, options = {}) {
             disposed = true;
             if (loadedTexture) loadedTexture.dispose();
         };
-    }, [url, flipY, repeat]);
+    }, [url, flipY, repeat, crisp]);
 
     return texture;
 }
@@ -88,6 +94,7 @@ function returnToFirstPage(delay = 0) {
         function restoreScrollStyles() {
             root.style.scrollBehavior = previousScrollBehavior;
             root.style.scrollSnapType = previousScrollSnapType;
+            window.dispatchEvent(new Event("scroll"));
         }
 
         function step(now) {
@@ -200,7 +207,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
     );
     const { nodes, materials } = useGLTF(cardUrl);
     const lanyardTexture = useSafeTexture(textureUrl, { repeat: true });
-    const cardFaceTexture = useSafeTexture(cardFaceUrl);
+    const cardFaceTexture = useSafeTexture(cardFaceUrl, { crisp: true });
     const curve = useMemo(
         () =>
             new THREE.CatmullRomCurve3([

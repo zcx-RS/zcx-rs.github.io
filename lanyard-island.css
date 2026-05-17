@@ -79,8 +79,12 @@
         inset: 0;
         z-index: 2;
         display: block;
-        pointer-events: auto;
-        touch-action: none;
+        pointer-events: none;
+        touch-action: pan-y;
+    }
+
+    .page4:not(.active) .lanyard-mobile-fallback {
+        display: none;
     }
 
     .lanyard-mobile-strap {
@@ -129,6 +133,9 @@
         box-shadow: 0 14px 32px rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
         overflow: hidden;
         will-change: transform;
+        pointer-events: auto;
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .lanyard-mobile-card::before {
@@ -152,6 +159,7 @@
         pointer-events: none;
         user-select: none;
         -webkit-user-drag: none;
+        image-rendering: -webkit-optimize-contrast;
     }
 
     .lanyard-mobile-fallback.is-returning .lanyard-mobile-card {

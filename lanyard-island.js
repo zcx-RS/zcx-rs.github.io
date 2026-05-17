@@ -23,7 +23,7 @@ function pageIsActive() {
 
 function warmSceneModule() {
     if (!mount || sceneModulePromise) return sceneModulePromise;
-    sceneModulePromise = import("./lanyard-scene.js?v=20260517-5").catch(error => {
+    sceneModulePromise = import("./lanyard-scene.js?v=20260517-7").catch(error => {
         sceneModulePromise = null;
         throw error;
     });
@@ -88,6 +88,9 @@ function returnToFirstPage(delay = 0) {
         function restoreScrollStyles() {
             root.style.scrollBehavior = previousScrollBehavior;
             root.style.scrollSnapType = previousScrollSnapType;
+            page?.classList.remove("active");
+            if (mount) mount.dataset.lanyardReady = "idle";
+            window.dispatchEvent(new Event("scroll"));
         }
 
         function step(now) {

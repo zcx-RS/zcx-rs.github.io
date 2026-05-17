@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp">
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
-    <link rel="stylesheet" href="./lanyard-island.css?v=20260517-5">
+    <link rel="stylesheet" href="./lanyard-island.css?v=20260517-7">
     <style>
         :root {
             --bg: #d7d6d2;
@@ -1693,13 +1693,13 @@
 
     <div class="page4" id="page4">
         <div class="lanyard-stage">
-            <div id="lanyard-root" data-card="./card.glb" data-lanyard="./lanyard.png?v=20260517-5" data-card-face="./card-face.png?v=20260517-5"></div>
+            <div id="lanyard-root" data-card="./card.glb" data-lanyard="./lanyard.png?v=20260517-7" data-card-face="./card-face.png?v=20260517-7"></div>
             <div class="lanyard-drag-hint" aria-hidden="true">拖拽它！</div>
             <div class="lanyard-mobile-fallback" aria-hidden="true">
                 <div class="lanyard-mobile-strap"></div>
                 <div class="lanyard-mobile-clip"></div>
                 <div class="lanyard-mobile-card">
-                    <img src="./card-face.png?v=20260517-5" alt="">
+                    <img src="./card-face.png?v=20260517-7" alt="">
                 </div>
             </div>
         </div>
@@ -2572,8 +2572,22 @@
                     ticking = true;
                 }
             }, { passive: true });
+            function resetMobileHomeStart() {
+                if (!isMobile() || currentPage !== "home") return;
+                window.scrollTo({ top: 0, behavior: "auto" });
+                page4.classList.remove("active");
+                updateScroll();
+            }
             if ("scrollRestoration" in history) history.scrollRestoration = "manual";
             window.scrollTo(0, 0);
+            window.addEventListener("pageshow", () => {
+                resetMobileHomeStart();
+                setTimeout(resetMobileHomeStart, 280);
+            }, { once: true });
+            window.addEventListener("load", () => {
+                setTimeout(resetMobileHomeStart, 80);
+                setTimeout(resetMobileHomeStart, 700);
+            }, { once: true });
             document.body.style.overflow = "hidden";
             setProgress(5);
             Promise.all([
@@ -2615,6 +2629,6 @@
         }
     }
     </script>
-    <script type="module" src="./lanyard-island.js?v=20260517-5"></script>
+    <script type="module" src="./lanyard-island.js?v=20260517-7"></script>
 </body>
 </html>
