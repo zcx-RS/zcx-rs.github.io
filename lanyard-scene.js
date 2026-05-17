@@ -71,15 +71,31 @@ function useSafeTexture(url, options = {}) {
     return texture;
 }
 
-function returnToFirstPage() {
-    window.requestAnimationFrame(() => {
+function returnToFirstPage(delay = 0) {
+    window.setTimeout(() => {
         document.body.classList.remove("smile-cursor");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+        const startY = window.scrollY;
+        const duration = 780;
+        const startTime = performance.now();
+        const easeOutBack = t => {
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+        };
+
+        function step(now) {
+            const t = Math.min(1, (now - startTime) / duration);
+            const eased = Math.min(1, Math.max(0, easeOutBack(t)));
+            window.scrollTo(0, Math.max(0, startY * (1 - eased)));
+            if (t < 1 && window.scrollY > 0) requestAnimationFrame(step);
+        }
+
+        requestAnimationFrame(step);
+    }, delay);
 }
 
 function Lanyard({
-    position = [0, 0, 20],
+    position = [0, 0, 15],
     gravity = [0, -40, 0],
     fov = 20,
     transparent = true,
@@ -101,7 +117,7 @@ function Lanyard({
         h(
             Canvas,
             {
-                camera: { position, fov },
+                camera: { position: isMobile ? [0, 0, 23] : position, fov: isMobile ? 24 : fov },
                 dpr: [1, isMobile ? 1.5 : 2],
                 gl: { alpha: transparent, antialias: true },
                 onCreated: ({ gl }) => {
@@ -310,7 +326,16 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                                 event.target.releasePointerCapture(event.pointerId);
                             } catch {}
                             drag(false);
-                            if (shouldReturnHome) returnToFirstPage();
+                            if (shouldReturnHome) {
+                                requestAnimationFrame(() => {
+                                    requestAnimationFrame(() => {
+                                        card.current?.wakeUp();
+                                        card.current?.setLinvel?.({ x: 0, y: 18, z: 0 }, true);
+                                        card.current?.setAngvel?.({ x: -4, y: 0.8, z: 1.6 }, true);
+                                    });
+                                });
+                                returnToFirstPage(220);
+                            }
                         },
                         onPointerDown: event => {
                             event.stopPropagation();
@@ -326,12 +351,14 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                     ),
                     cardFaceTexture && h(
                         "mesh",
-                        { position: [0, 0.4, -0.025], renderOrder: 3 },
-                        h("planeGeometry", { args: [0.56, 0.72] }),
+                        { position: [0, 0.52, -0.025], renderOrder: 3 },
+                        h("planeGeometry", { args: [0.62, 0.79] }),
                         h("meshBasicMaterial", {
                             map: cardFaceTexture,
                             transparent: true,
                             depthTest: false,
+                            depthWrite: false,
+                            alphaTest: 0.02,
                             polygonOffset: true,
                             polygonOffsetFactor: -1,
                             side: THREE.DoubleSide,

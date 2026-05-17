@@ -55,7 +55,7 @@ function addPreloadHint(href, as, type) {
     link.href = href;
     link.as = as;
     if (type) link.type = type;
-    if (as === "fetch") link.crossOrigin = "anonymous";
+    if (as === "fetch" || as === "image") link.crossOrigin = "anonymous";
     document.head.appendChild(link);
 }
 
