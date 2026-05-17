@@ -84,9 +84,10 @@ function returnToFirstPage(delay = 0) {
         const previousScrollBehavior = root.style.scrollBehavior;
         const previousScrollSnapType = root.style.scrollSnapType;
         const startY = window.scrollY;
-        const duration = 460;
+        const screenDistance = Math.max(1, startY / Math.max(1, window.innerHeight));
+        const duration = Math.min(1400, Math.max(980, screenDistance * 285));
         const startTime = performance.now();
-        const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
+        const easeInOutSine = t => 0.5 - Math.cos(Math.PI * t) / 2;
 
         root.style.scrollBehavior = "auto";
         root.style.scrollSnapType = "none";
@@ -99,7 +100,7 @@ function returnToFirstPage(delay = 0) {
 
         function step(now) {
             const t = Math.min(1, (now - startTime) / duration);
-            const eased = easeOutQuint(t);
+            const eased = easeInOutSine(t);
             window.scrollTo(0, Math.max(0, startY * (1 - eased)));
             if (t < 1 && window.scrollY > 0) {
                 requestAnimationFrame(step);
