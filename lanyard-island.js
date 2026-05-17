@@ -20,7 +20,7 @@ function pageIsActive() {
 
 function warmSceneModule() {
     if (!mount || sceneModulePromise) return sceneModulePromise;
-    sceneModulePromise = import("./lanyard-scene.js").catch(error => {
+    sceneModulePromise = import("./lanyard-scene.js?v=20260517-2").catch(error => {
         sceneModulePromise = null;
         throw error;
     });
