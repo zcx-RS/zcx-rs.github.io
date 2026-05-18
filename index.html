@@ -10,10 +10,6 @@
     <link rel="preconnect" href="https://img.alicdn.com" crossorigin>
     <link rel="preconnect" href="https://cloud.video.taobao.com" crossorigin>
     <link rel="preload" as="image" fetchpriority="high" href="https://img.alicdn.com/imgextra/i1/3952997314/O1CN01BXAr6b23trxdBZpUS_!!3952997314.webp">
-    <link rel="modulepreload" href="./vendor/lanyard/lanyard-scene.bundle.js?v=20260518-1" media="(min-width: 769px)">
-    <link rel="preload" as="fetch" href="./card.glb" type="model/gltf-binary" crossorigin media="(min-width: 769px)">
-    <link rel="preload" as="image" href="./lanyard.png?v=20260517-8" media="(min-width: 769px)">
-    <link rel="preload" as="image" href="./card-face.png?v=20260518-1" media="(min-width: 769px)">
     <link rel="icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp" type="image/webp" sizes="any">
     <link rel="shortcut icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp" type="image/webp">
     <link rel="apple-touch-icon" href="https://img.alicdn.com/imgextra/i4/3952997314/O1CN01qvsLVi23trxjOwpuR_!!3952997314.webp">
@@ -2087,26 +2083,6 @@
                 if (isMobile()) return;
                 if (warmupStarted) return;
                 warmupStarted = true;
-                requestIdleTask(() => {
-                    ["detail1", "detail2", "detail3", "detail4"].forEach(id => renderDetail(id));
-                    document.querySelectorAll(".detail-page img[data-src]").forEach(loadLazyImage);
-                    document.querySelectorAll(".detail-page img").forEach(img => {
-                        img.fetchPriority = img.fetchPriority || "low";
-                        if (img.complete && img.naturalWidth > 0) markImageLoaded(img);
-                    });
-                    const animationDetail = document.getElementById("detail4");
-                    hydrateLazyVideos(animationDetail, "metadata");
-                    animationDetail.querySelectorAll(".animation-video-card video").forEach(setAnimationCoverFrame);
-                    hydrateLazyVideos(page3, "play");
-                    preloadImagesSequential([
-                        ...detailImageSources("detail1"),
-                        ...detailImageSources("detail2"),
-                        ...detailImageSources("detail3")
-                    ], {
-                        highCount: isMobile() ? 4 : 10,
-                        concurrency: isMobile() ? 2 : 4
-                    });
-                }, 350);
             }
 
             function markImageLoaded(img) {
@@ -2748,6 +2724,6 @@
             updateScroll();
         })();
     </script>
-    <script type="module" src="./lanyard-island.js?v=20260518-6"></script>
+    <script type="module" src="./lanyard-island.js?v=20260518-7"></script>
 </body>
 </html>

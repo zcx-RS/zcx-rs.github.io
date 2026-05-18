@@ -5,6 +5,7 @@ let sceneModulePromise = null;
 let unmountScene = null;
 let loadingScene = false;
 let assetsWarmed = false;
+let sceneDownloadsPrimed = false;
 let fallbackReturnFrame = 0;
 let fallbackReturnToken = 0;
 let sceneFailed = false;
@@ -36,9 +37,25 @@ function warmSceneModule() {
     return sceneModulePromise;
 }
 
+function primeSceneDownloads() {
+    if (!mount || sceneDownloadsPrimed || shouldUseMobileFallback()) return;
+    sceneDownloadsPrimed = true;
+    const { cardUrl, textureUrl, cardFaceUrl } = assetUrls();
+    addPrefetchHint(sceneBundleUrl, "script");
+    [
+        [cardUrl, "fetch", "model/gltf-binary"],
+        [textureUrl, "image"],
+        [cardFaceUrl, "image"]
+    ].forEach(([url, as, type]) => {
+        if (!url) return;
+        addPrefetchHint(url, as, type);
+    });
+}
+
 function warmSceneAssets() {
     if (!mount || assetsWarmed || shouldUseMobileFallback()) return;
     assetsWarmed = true;
+    primeSceneDownloads();
     const { cardUrl, textureUrl, cardFaceUrl } = assetUrls();
     addModulePreloadHint(sceneBundleUrl);
     [
@@ -67,6 +84,18 @@ function addModulePreloadHint(href) {
     const link = document.createElement("link");
     link.rel = "modulepreload";
     link.href = href;
+    document.head.appendChild(link);
+}
+
+function addPrefetchHint(href, as, type) {
+    const exists = Array.from(document.querySelectorAll('link[rel="prefetch"]')).some(link => link.getAttribute("href") === href);
+    if (!href || exists) return;
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.href = href;
+    if (as) link.as = as;
+    if (type) link.type = type;
+    if (as === "fetch" || as === "image") link.crossOrigin = "anonymous";
     document.head.appendChild(link);
 }
 
@@ -260,6 +289,7 @@ function syncScene() {
         if (!pageIsActive()) setFallbackActive(false);
         return;
     }
+    if (window.scrollY > window.innerHeight * 0.6) primeSceneDownloads();
     if (window.scrollY > window.innerHeight * 1.7) warmSceneAssets();
     if (pageIsActive()) mountScene();
     else {
@@ -295,9 +325,11 @@ if (mount) {
         else syncScene();
     });
 
-    if (!shouldUseMobileFallback()) warmSceneAssets();
+    const requestIdle = window.requestIdleCallback?.bind(window) || (callback => window.setTimeout(callback, 1400));
     window.addEventListener("load", () => {
-        if (!shouldUseMobileFallback()) warmSceneAssets();
+        window.setTimeout(() => {
+            if (!shouldUseMobileFallback()) requestIdle(primeSceneDownloads, { timeout: 4200 });
+        }, 2600);
     }, { once: true });
 
     requestAnimationFrame(syncScene);
