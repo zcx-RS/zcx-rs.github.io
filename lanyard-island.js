@@ -7,6 +7,9 @@ let loadingScene = false;
 let assetsWarmed = false;
 let fallbackReturnFrame = 0;
 let fallbackReturnToken = 0;
+let sceneFailed = false;
+let sceneLoadTimeout = 0;
+let sceneLoadToken = 0;
 const mobileFallbackQuery = window.matchMedia("(max-width: 768px)");
 const touchFallbackQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
 const mobileDeviceQuery = /Android|iPhone|iPad|iPod|webOS/i;
@@ -48,6 +51,8 @@ function warmSceneAssets() {
     warmSceneModule()
         .catch(error => {
             assetsWarmed = false;
+            sceneFailed = true;
+            setFallbackActive(pageIsActive(), "fallback-error");
             console.warn("Lanyard scene failed to preload.", error);
         });
 }
@@ -71,6 +76,28 @@ function warmBrowserCache(url) {
 
 function shouldUseMobileFallback() {
     return mobileFallbackQuery.matches || touchFallbackQuery.matches || mobileDeviceQuery.test(navigator.userAgent);
+}
+
+function fallbackElement() {
+    return document.querySelector(".lanyard-mobile-fallback");
+}
+
+function loadFallbackCardFace() {
+    const image = fallbackElement()?.querySelector(".lanyard-mobile-card img");
+    if (!image || image.src) return;
+    const src = image.dataset.src || assetUrls().cardFaceUrl;
+    if (src) image.src = src;
+}
+
+function setFallbackActive(active, readyState = "fallback") {
+    page?.classList.toggle("use-lanyard-fallback", !!active);
+    if (!active) return;
+    loadFallbackCardFace();
+    if (mount) mount.dataset.lanyardReady = readyState;
+}
+
+function fallbackIsActive() {
+    return shouldUseMobileFallback() || page?.classList.contains("use-lanyard-fallback");
 }
 
 function returnToFirstPage(delay = 0) {
@@ -118,8 +145,8 @@ function returnToFirstPage(delay = 0) {
     }, delay);
 }
 
-function setupMobileFallback() {
-    const fallback = document.querySelector(".lanyard-mobile-fallback");
+function setupFallbackCard() {
+    const fallback = fallbackElement();
     const card = fallback?.querySelector(".lanyard-mobile-card");
     if (!fallback || !card || fallback.dataset.bound === "true") return;
     fallback.dataset.bound = "true";
@@ -146,7 +173,7 @@ function setupMobileFallback() {
     }
 
     card.addEventListener("pointerdown", event => {
-        if (!shouldUseMobileFallback() || !pageIsActive()) return;
+        if (!fallbackIsActive() || !pageIsActive()) return;
         dragging = true;
         startX = event.clientX;
         startY = event.clientY;
@@ -174,16 +201,26 @@ function setupMobileFallback() {
 async function mountScene() {
     if (!mount || unmountScene || loadingScene) return;
     loadingScene = true;
+    const token = ++sceneLoadToken;
+    clearTimeout(sceneLoadTimeout);
+    sceneLoadTimeout = window.setTimeout(() => {
+        if (loadingScene && token === sceneLoadToken && pageIsActive()) setFallbackActive(true, "fallback-loading");
+    }, 2200);
     try {
         const scene = await warmSceneModule();
         scene.preloadLanyard?.(mount);
         if (!pageIsActive() || unmountScene) return;
         unmountScene = scene.mountLanyard(mount);
+        sceneFailed = false;
+        setFallbackActive(false);
         mount.dataset.lanyardReady = "true";
     } catch (error) {
+        sceneFailed = true;
         console.warn("Lanyard scene failed to load.", error);
         mount.dataset.lanyardReady = "error";
+        setFallbackActive(pageIsActive(), "fallback-error");
     } finally {
+        clearTimeout(sceneLoadTimeout);
         loadingScene = false;
     }
 }
@@ -201,12 +238,22 @@ function stopScene() {
 function syncScene() {
     if (shouldUseMobileFallback()) {
         stopScene();
-        if (mount) mount.dataset.lanyardReady = pageIsActive() ? "mobile-fallback" : "idle";
+        setFallbackActive(pageIsActive(), pageIsActive() ? "mobile-fallback" : "idle");
+        if (!pageIsActive()) setFallbackActive(false);
+        return;
+    }
+    if (sceneFailed) {
+        stopScene();
+        setFallbackActive(pageIsActive(), pageIsActive() ? "fallback-error" : "idle");
+        if (!pageIsActive()) setFallbackActive(false);
         return;
     }
     if (window.scrollY > window.innerHeight * 1.7) warmSceneAssets();
     if (pageIsActive()) mountScene();
-    else stopScene();
+    else {
+        stopScene();
+        setFallbackActive(false);
+    }
 }
 
 function watchMediaQuery(query) {
@@ -215,7 +262,7 @@ function watchMediaQuery(query) {
 }
 
 if (mount) {
-    setupMobileFallback();
+    setupFallbackCard();
 
     if (page) {
         new MutationObserver(syncScene).observe(page, {

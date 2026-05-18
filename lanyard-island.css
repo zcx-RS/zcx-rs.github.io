@@ -62,6 +62,117 @@
     display: none;
 }
 
+.page4.use-lanyard-fallback #lanyard-root {
+    display: none;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-fallback {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: block;
+    pointer-events: none;
+    touch-action: pan-y;
+    --drag-x: 0px;
+    --drag-y: 0px;
+    --drag-r: 0deg;
+    --clip-x: 0px;
+    --clip-y: 0px;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-strap {
+    position: absolute;
+    left: 50%;
+    top: -10vh;
+    width: clamp(28px, 3.2vw, 42px);
+    height: 46vh;
+    transform: translateX(-50%);
+    background:
+        repeating-linear-gradient(
+            180deg,
+            transparent 0 62px,
+            rgba(255, 255, 255, 0.09) 62px 63px,
+            transparent 63px 124px
+        ),
+        #020202;
+    border-radius: 0 0 3px 3px;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-clip {
+    position: absolute;
+    left: 50%;
+    top: calc(50% - min(16vw, 190px));
+    width: clamp(40px, 4.2vw, 54px);
+    height: clamp(28px, 3vw, 38px);
+    transform: translate(-50%, -50%);
+    border: 5px solid #070707;
+    border-bottom-width: 6px;
+    border-radius: 16px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.28));
+    transition: transform 0.28s ease;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: min(30vw, 390px);
+    min-width: 300px;
+    aspect-ratio: 0.786;
+    display: grid;
+    place-items: center;
+    padding: 4%;
+    transform: translate(-50%, -50%);
+    border-radius: 10px;
+    background: #f4f4f2;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+    will-change: transform;
+    pointer-events: auto;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.28s cubic-bezier(0.2, 1, 0.22, 1);
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-fallback.is-dragging .lanyard-mobile-clip {
+    transform: translate(calc(-50% + var(--clip-x)), calc(-50% + var(--clip-y)));
+    transition: none;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-fallback.is-dragging .lanyard-mobile-card {
+    transform: translate(calc(-50% + var(--drag-x)), calc(-50% + var(--drag-y))) rotate(var(--drag-r));
+    transition: none;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-card::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 7px;
+    width: 14px;
+    height: 23px;
+    transform: translateX(-50%);
+    border-radius: 0 0 8px 8px;
+    background: #050505;
+    z-index: 2;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-card img {
+    width: 98%;
+    height: 98%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.page4.use-lanyard-fallback .lanyard-mobile-fallback.is-returning .lanyard-mobile-card {
+    transition: transform 0.34s cubic-bezier(0.18, 1.35, 0.2, 1);
+    transform: translate(-50%, -74%) rotate(-5deg);
+}
+
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
     #lanyard-root {
         display: none;
