@@ -10,6 +10,7 @@ let fallbackReturnToken = 0;
 let sceneFailed = false;
 let sceneLoadTimeout = 0;
 let sceneLoadToken = 0;
+const sceneBundleUrl = "./vendor/lanyard/lanyard-scene.bundle.js?v=20260518-1";
 const mobileFallbackQuery = window.matchMedia("(max-width: 768px)");
 const touchFallbackQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
 const mobileDeviceQuery = /Android|iPhone|iPad|iPod|webOS/i;
@@ -28,7 +29,7 @@ function pageIsActive() {
 
 function warmSceneModule() {
     if (!mount || sceneModulePromise) return sceneModulePromise;
-    sceneModulePromise = import("./lanyard-scene.js?v=20260518-3").catch(error => {
+    sceneModulePromise = import(sceneBundleUrl).catch(error => {
         sceneModulePromise = null;
         throw error;
     });
@@ -39,6 +40,7 @@ function warmSceneAssets() {
     if (!mount || assetsWarmed || shouldUseMobileFallback()) return;
     assetsWarmed = true;
     const { cardUrl, textureUrl, cardFaceUrl } = assetUrls();
+    addModulePreloadHint(sceneBundleUrl);
     [
         [cardUrl, "fetch", "model/gltf-binary"],
         [textureUrl, "image"],
@@ -46,15 +48,26 @@ function warmSceneAssets() {
     ].forEach(([url, as, type]) => {
         if (!url) return;
         addPreloadHint(url, as, type);
-        warmBrowserCache(url);
     });
     warmSceneModule()
+        .then(scene => {
+            scene.preloadLanyard?.(mount);
+        })
         .catch(error => {
             assetsWarmed = false;
             sceneFailed = true;
             setFallbackActive(pageIsActive(), "fallback-error");
             console.warn("Lanyard scene failed to preload.", error);
         });
+}
+
+function addModulePreloadHint(href) {
+    const exists = Array.from(document.querySelectorAll('link[rel="modulepreload"]')).some(link => link.getAttribute("href") === href);
+    if (!href || exists) return;
+    const link = document.createElement("link");
+    link.rel = "modulepreload";
+    link.href = href;
+    document.head.appendChild(link);
 }
 
 function addPreloadHint(href, as, type) {
@@ -67,11 +80,6 @@ function addPreloadHint(href, as, type) {
     if (type) link.type = type;
     if (as === "fetch" || as === "image") link.crossOrigin = "anonymous";
     document.head.appendChild(link);
-}
-
-function warmBrowserCache(url) {
-    if (!url || !window.fetch) return;
-    window.fetch(url, { cache: "force-cache" }).catch(() => {});
 }
 
 function shouldUseMobileFallback() {
@@ -287,9 +295,9 @@ if (mount) {
         else syncScene();
     });
 
-    const requestIdle = window.requestIdleCallback?.bind(window) || (callback => window.setTimeout(callback, 1600));
+    if (!shouldUseMobileFallback()) warmSceneAssets();
     window.addEventListener("load", () => {
-        if (!shouldUseMobileFallback()) requestIdle(warmSceneAssets, { timeout: 4200 });
+        if (!shouldUseMobileFallback()) warmSceneAssets();
     }, { once: true });
 
     requestAnimationFrame(syncScene);
