@@ -249,6 +249,9 @@
             pointer-events: none;
             transform: scale(0.95);
         }
+        .page1.home-away {
+            pointer-events: none;
+        }
         header {
             display: flex;
             justify-content: center;
@@ -1194,6 +1197,9 @@
                 overflow: hidden;
                 justify-content: flex-start;
             }
+            #loading-overlay {
+                transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            }
             header {
                 padding: max(16px, env(safe-area-inset-top)) 18px 8px;
                 flex-shrink: 0;
@@ -1837,6 +1843,8 @@
             let lastViewportWidth = innerWidth;
             let resizeRaf = 0;
             let scrollSettleTimer = 0;
+            let page3VideoHydrateTimer = 0;
+            let mobileHomeInteractionStarted = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
 
             function escapeHtml(value) {
@@ -2020,7 +2028,7 @@
                     document.body.style.overflow = "";
                     loadingOverlay.style.display = "none";
                     scheduleWarmupDetailAssets();
-                }, 500);
+                }, isMobile() ? 320 : 500);
             }
 
             const preloadedImages = new Set();
@@ -2072,21 +2080,9 @@
                 });
             }
             function scheduleWarmupDetailAssets() {
+                if (isMobile()) return;
                 if (warmupStarted) return;
                 warmupStarted = true;
-                if (isMobile()) {
-                    requestIdleTask(() => {
-                        preloadImagesSequential([
-                            detailImageSources("detail1")[0],
-                            detailImageSources("detail2")[0],
-                            detailImageSources("detail3")[0]
-                        ], {
-                            highCount: 1,
-                            concurrency: 1
-                        });
-                    }, 1200);
-                    return;
-                }
                 requestIdleTask(() => {
                     ["detail1", "detail2", "detail3", "detail4"].forEach(id => renderDetail(id));
                     document.querySelectorAll(".detail-page img[data-src]").forEach(loadLazyImage);
@@ -2121,7 +2117,10 @@
                 const url = escapeHtml(originalImageUrl(src));
                 const altText = escapeHtml(alt);
                 const eager = index < eagerLimit;
-                return `<img src="${url}" data-original-src="${url}" alt="${altText}" loading="eager" decoding="async" fetchpriority="${eager ? (index < 2 ? "high" : "auto") : "low"}">`;
+                if (eager) {
+                    return `<img src="${url}" data-original-src="${url}" alt="${altText}" loading="eager" decoding="async" fetchpriority="${index < 2 ? "high" : "auto"}">`;
+                }
+                return `<img data-src="${url}" data-original-src="${url}" alt="${altText}" loading="lazy" decoding="async" fetchpriority="low">`;
             }
             function galleryMarkup(id, images) {
                 const limit = eagerImageCount(id);
@@ -2600,6 +2599,16 @@
             });
             document.querySelectorAll(".back-btn").forEach(button => button.addEventListener("click", goBack));
 
+            function hydratePage3Videos() {
+                if (page3VideosHydrated || currentPage !== "home" || activeHomeSection !== 3) return;
+                hydrateLazyVideos(page3, "play");
+                page3VideosHydrated = true;
+                page3Videos.forEach(video => {
+                    video.muted = true;
+                    if (video.paused) video.play().catch(() => {});
+                });
+            }
+
             function syncHomeSection(nextSection) {
                 if (nextSection === activeHomeSection) return;
                 const previousSection = activeHomeSection;
@@ -2624,14 +2633,16 @@
                 if (nextSection === 3) {
                     scheduleWarmupDetailAssets();
                     if (!page3VideosHydrated) {
-                        hydrateLazyVideos(page3, "play");
-                        page3VideosHydrated = true;
+                        clearTimeout(page3VideoHydrateTimer);
+                        if (isMobile()) page3VideoHydrateTimer = setTimeout(hydratePage3Videos, 360);
+                        else hydratePage3Videos();
                     }
-                    page3Videos.forEach(video => {
+                    else page3Videos.forEach(video => {
                         video.muted = true;
                         if (video.paused) video.play().catch(() => {});
                     });
                 } else if (previousSection === 3) {
+                    clearTimeout(page3VideoHydrateTimer);
                     page3Videos.forEach(video => video.pause());
                 }
 
@@ -2647,13 +2658,16 @@
                     scrollSettleTimer = setTimeout(() => document.body.classList.remove("is-home-scrolling"), 180);
                 }
                 const progress = Math.min(1, Math.max(0, sY / vh));
-                page1.style.transform = `scale(${1 - progress * 0.3})`;
-                page1.style.opacity = 1 - progress;
+                const heroProgress = isMobile() ? Math.min(1, Math.max(0, sY / (vh * 0.72))) : progress;
+                page1.style.transform = `scale(${1 - heroProgress * 0.3})`;
+                page1.style.opacity = 1 - heroProgress;
+                const mobileSection = Math.max(0, Math.min(homeScreenCount() - 1, Math.round(sY / vh)));
                 const inWork = sY >= vh && sY < 2 * vh;
                 const inP2 = sY >= 2 * vh && sY < 3 * vh;
                 const inP3 = sY >= 3 * vh && sY < 4 * vh;
                 const inP4 = !isMobile() && sY >= 4 * vh;
-                const nextSection = inWork ? 1 : inP2 ? 2 : inP3 ? 3 : inP4 ? 4 : 0;
+                const nextSection = isMobile() ? mobileSection : inWork ? 1 : inP2 ? 2 : inP3 ? 3 : inP4 ? 4 : 0;
+                page1.classList.toggle("home-away", nextSection > 0);
                 syncHomeSection(nextSection);
                 document.body.classList.remove("smile-cursor");
             }
@@ -2683,8 +2697,14 @@
                     ticking = true;
                 }
             }, { passive: true });
+            function markMobileHomeInteraction() {
+                if (isMobile() && currentPage === "home") mobileHomeInteractionStarted = true;
+            }
+            window.addEventListener("touchstart", markMobileHomeInteraction, { passive: true });
+            window.addEventListener("touchmove", markMobileHomeInteraction, { passive: true });
+            window.addEventListener("pointerdown", markMobileHomeInteraction, { passive: true });
             function resetMobileHomeStart() {
-                if (!isMobile() || currentPage !== "home" || document.body.classList.contains("is-home-scrolling")) return;
+                if (!isMobile() || currentPage !== "home" || mobileHomeInteractionStarted || document.body.classList.contains("is-home-scrolling")) return;
                 window.scrollTo({ top: 0, behavior: "auto" });
                 page4.classList.remove("active");
                 updateScroll();
@@ -2704,7 +2724,7 @@
             Promise.all([
                 Promise.race([
                     trackCriticalImages(),
-                    new Promise(resolve => setTimeout(resolve, isMobile() ? 1400 : 2400))
+                    new Promise(resolve => setTimeout(resolve, isMobile() ? 900 : 2400))
                 ]),
                 new Promise(resolve => setTimeout(resolve, 180)),
                 new Promise(resolve => {
@@ -2720,7 +2740,7 @@
                 if (!complete) {
                     finishLoading();
                 }
-            }, isMobile() ? 3000 : 5000);
+            }, isMobile() ? 2200 : 5000);
             updateScroll();
         })();
     </script>
