@@ -39,7 +39,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transform: scale(0.98);
+    transform: translateX(0.33em) scale(0.98);
     pointer-events: none;
     color: rgba(128, 128, 128, 0.5);
     font-size: clamp(5rem, 16vw, 15rem);
@@ -55,7 +55,7 @@
 
 .page4.active .lanyard-drag-hint {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(0.33em) scale(1);
 }
 
 .lanyard-mobile-fallback {
