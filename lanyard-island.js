@@ -5,6 +5,8 @@ let sceneModulePromise = null;
 let unmountScene = null;
 let loadingScene = false;
 let assetsWarmed = false;
+let fallbackReturnFrame = 0;
+let fallbackReturnToken = 0;
 const mobileFallbackQuery = window.matchMedia("(max-width: 768px)");
 const touchFallbackQuery = window.matchMedia("(hover: none) and (pointer: coarse)");
 const mobileDeviceQuery = /Android|iPhone|iPad|iPod|webOS/i;
@@ -23,7 +25,7 @@ function pageIsActive() {
 
 function warmSceneModule() {
     if (!mount || sceneModulePromise) return sceneModulePromise;
-    sceneModulePromise = import("./lanyard-scene.js?v=20260518-2").catch(error => {
+    sceneModulePromise = import("./lanyard-scene.js?v=20260518-3").catch(error => {
         sceneModulePromise = null;
         throw error;
     });
@@ -72,15 +74,21 @@ function shouldUseMobileFallback() {
 }
 
 function returnToFirstPage(delay = 0) {
+    const token = ++fallbackReturnToken;
+    if (fallbackReturnFrame) {
+        cancelAnimationFrame(fallbackReturnFrame);
+        fallbackReturnFrame = 0;
+    }
     window.setTimeout(() => {
+        if (token !== fallbackReturnToken) return;
         document.body.classList.remove("smile-cursor");
         const root = document.documentElement;
         const previousScrollBehavior = root.style.scrollBehavior;
         const previousScrollSnapType = root.style.scrollSnapType;
         const startY = window.scrollY;
-        const duration = 500;
+        const duration = 760;
         const startTime = performance.now();
-        const easeOutQuint = t => 1 - Math.pow(1 - t, 5);
+        const smoothStep = t => t * t * t * (t * (t * 6 - 15) + 10);
 
         root.style.scrollBehavior = "auto";
         root.style.scrollSnapType = "none";
@@ -90,21 +98,23 @@ function returnToFirstPage(delay = 0) {
             root.style.scrollSnapType = previousScrollSnapType;
             page?.classList.remove("active");
             if (mount) mount.dataset.lanyardReady = "idle";
+            fallbackReturnFrame = 0;
             window.dispatchEvent(new Event("scroll"));
         }
 
         function step(now) {
+            if (token !== fallbackReturnToken) return;
             const t = Math.min(1, (now - startTime) / duration);
-            window.scrollTo(0, Math.max(0, startY * (1 - easeOutQuint(t))));
+            window.scrollTo(0, Math.max(0, startY * (1 - smoothStep(t))));
             if (t < 1 && window.scrollY > 0) {
-                requestAnimationFrame(step);
+                fallbackReturnFrame = requestAnimationFrame(step);
             } else {
                 window.scrollTo(0, 0);
                 requestAnimationFrame(restoreScrollStyles);
             }
         }
 
-        requestAnimationFrame(step);
+        fallbackReturnFrame = requestAnimationFrame(step);
     }, delay);
 }
 

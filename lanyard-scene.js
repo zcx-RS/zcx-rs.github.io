@@ -16,6 +16,8 @@ import * as THREE from "three";
 extend({ MeshLineGeometry, MeshLineMaterial });
 
 const h = React.createElement;
+let returnAnimationFrame = 0;
+let returnAnimationToken = 0;
 
 function isFinitePoint(point) {
     return point && Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z);
@@ -78,16 +80,22 @@ function useSafeTexture(url, options = {}) {
 }
 
 function returnToFirstPage(delay = 0) {
+    const token = ++returnAnimationToken;
+    if (returnAnimationFrame) {
+        cancelAnimationFrame(returnAnimationFrame);
+        returnAnimationFrame = 0;
+    }
     window.setTimeout(() => {
+        if (token !== returnAnimationToken) return;
         document.body.classList.remove("smile-cursor");
         const root = document.documentElement;
         const previousScrollBehavior = root.style.scrollBehavior;
         const previousScrollSnapType = root.style.scrollSnapType;
         const startY = window.scrollY;
         const screenDistance = Math.max(1, startY / Math.max(1, window.innerHeight));
-        const duration = Math.min(1400, Math.max(980, screenDistance * 285));
+        const duration = Math.min(1320, Math.max(900, screenDistance * 300));
         const startTime = performance.now();
-        const easeInOutSine = t => 0.5 - Math.cos(Math.PI * t) / 2;
+        const smoothStep = t => t * t * t * (t * (t * 6 - 15) + 10);
 
         root.style.scrollBehavior = "auto";
         root.style.scrollSnapType = "none";
@@ -95,22 +103,24 @@ function returnToFirstPage(delay = 0) {
         function restoreScrollStyles() {
             root.style.scrollBehavior = previousScrollBehavior;
             root.style.scrollSnapType = previousScrollSnapType;
+            returnAnimationFrame = 0;
             window.dispatchEvent(new Event("scroll"));
         }
 
         function step(now) {
+            if (token !== returnAnimationToken) return;
             const t = Math.min(1, (now - startTime) / duration);
-            const eased = easeInOutSine(t);
+            const eased = smoothStep(t);
             window.scrollTo(0, Math.max(0, startY * (1 - eased)));
             if (t < 1 && window.scrollY > 0) {
-                requestAnimationFrame(step);
+                returnAnimationFrame = requestAnimationFrame(step);
             } else {
                 window.scrollTo(0, 0);
                 requestAnimationFrame(restoreScrollStyles);
             }
         }
 
-        requestAnimationFrame(step);
+        returnAnimationFrame = requestAnimationFrame(step);
     }, delay);
 }
 
@@ -341,6 +351,7 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                         onPointerOver: () => hover(true),
                         onPointerOut: () => hover(false),
                         onPointerUp: event => {
+                            event.stopPropagation();
                             const shouldReturnHome = !!dragged;
                             try {
                                 event.target.releasePointerCapture(event.pointerId);
@@ -350,11 +361,11 @@ function Band({ maxSpeed = 50, minSpeed = 0, isMobile = false, cardUrl, textureU
                                 requestAnimationFrame(() => {
                                     requestAnimationFrame(() => {
                                         card.current?.wakeUp();
-                                        card.current?.setLinvel?.({ x: 0, y: 58, z: 0 }, true);
-                                        card.current?.setAngvel?.({ x: -10.5, y: 1.8, z: 3.2 }, true);
+                                        card.current?.setLinvel?.({ x: 0, y: 44, z: 0 }, true);
+                                        card.current?.setAngvel?.({ x: -7.6, y: 1.4, z: 2.4 }, true);
                                     });
                                 });
-                                returnToFirstPage(360);
+                                returnToFirstPage(220);
                             }
                         },
                         onPointerDown: event => {
