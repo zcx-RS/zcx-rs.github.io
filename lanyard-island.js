@@ -185,13 +185,17 @@ function setupFallbackCard() {
 
     card.addEventListener("pointermove", event => {
         if (!dragging) return;
-        const dx = Math.max(-46, Math.min(46, event.clientX - startX));
-        const dy = Math.max(-52, Math.min(46, event.clientY - startY));
+        const desktopFallback = !shouldUseMobileFallback();
+        const dxLimit = desktopFallback ? 115 : 46;
+        const dyMin = desktopFallback ? -95 : -52;
+        const dyMax = desktopFallback ? 105 : 46;
+        const dx = Math.max(-dxLimit, Math.min(dxLimit, event.clientX - startX));
+        const dy = Math.max(dyMin, Math.min(dyMax, event.clientY - startY));
         fallback.style.setProperty("--drag-x", `${dx}px`);
         fallback.style.setProperty("--drag-y", `${dy}px`);
-        fallback.style.setProperty("--drag-r", `${dx * 0.03}deg`);
-        fallback.style.setProperty("--clip-x", `${dx * 0.35}px`);
-        fallback.style.setProperty("--clip-y", `${dy * 0.18}px`);
+        fallback.style.setProperty("--drag-r", `${dx * (desktopFallback ? 0.045 : 0.03)}deg`);
+        fallback.style.setProperty("--clip-x", `${dx * (desktopFallback ? 0.28 : 0.35)}px`);
+        fallback.style.setProperty("--clip-y", `${dy * (desktopFallback ? 0.12 : 0.18)}px`);
     });
 
     card.addEventListener("pointerup", release);
