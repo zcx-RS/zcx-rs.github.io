@@ -34,16 +34,19 @@
 
 .lanyard-drag-hint {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    inset: 0;
     z-index: 0;
-    transform: translate(-50%, -50%) scale(0.98);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: scale(0.98);
     pointer-events: none;
     color: rgba(128, 128, 128, 0.5);
     font-size: clamp(5rem, 16vw, 15rem);
     font-weight: 900;
     letter-spacing: 0;
-    line-height: 0.9;
+    line-height: 1;
+    text-align: center;
     white-space: nowrap;
     opacity: 0;
     user-select: none;
@@ -52,7 +55,7 @@
 
 .page4.active .lanyard-drag-hint {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
+    transform: scale(1);
 }
 
 .lanyard-mobile-fallback {
