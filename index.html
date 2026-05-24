@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://img.alicdn.com" crossorigin>
     <link rel="preconnect" href="https://cloud.video.taobao.com" crossorigin>
     <link rel="preload" as="image" fetchpriority="high" href="https://img.alicdn.com/imgextra/i1/3952997314/O1CN01BXAr6b23trxdBZpUS_!!3952997314.webp">
-    <!-- 预加载视频保持，图片懒加载将由脚本控制 -->
     <link rel="preload" as="video" href="https://cloud.video.taobao.com/vod/ROcWB40obKXmELuohfDODShNTlKJDxErHiTIa3Y7dxs.mp4">
     <link rel="preload" as="video" href="https://cloud.video.taobao.com/vod/6UGdtOaG3dxYIvWSrAfBvCS3rSqreOtoglnu-S5Cdk0.mp4">
     <link rel="preload" as="video" href="https://cloud.video.taobao.com/vod/lWY7-8DoCCBgfzPfiGIZ5rVH12sS1ohR3o2fBlWTSog.mp4">
@@ -20,7 +19,6 @@
     <meta name="theme-color" content="#d7d6d2">
     <meta name="apple-mobile-web-app-title" content="周成鑫作品集">
     <style>
-        /* 样式保持不变，与之前相同 */
         :root {
             --bg: #d7d6d2;
             --text: #111;
@@ -538,7 +536,6 @@
             const animationModal = document.getElementById("animationVideoModal");
             const animationModalVideo = document.getElementById("animationModalVideo");
 
-            // ========== 只保留清除焦点状态的函数，不再自动激活 ==========
             function deactivatePage4Focus() {
                 const lines = page4.querySelectorAll('.focus-line');
                 const frame = page4.querySelector('.focus-frame');
@@ -546,7 +543,6 @@
                 if (frame) frame.style.opacity = '0';
             }
 
-            // 初始化真正的交互：鼠标悬停时激活
             function initTrueFocus() {
                 const containers = document.querySelectorAll('.focus-line-container[data-focus-mode="hover"]');
                 containers.forEach(container => {
@@ -1028,7 +1024,6 @@
             function imageTag(src, index, alt, eagerLimit) {
                 const url = escapeHtml(originalImageUrl(src));
                 const altText = escapeHtml(alt);
-                // 使用 loading="lazy" 延迟加载非首屏图片
                 return `<img src="${url}" data-original-src="${url}" alt="${altText}" loading="lazy" decoding="async" fetchpriority="${index < 8 ? "high" : "auto"}">`;
             }
             function galleryMarkup(id, images) {
@@ -1489,7 +1484,6 @@
                     page3Videos.forEach(video => video.pause());
                 }
 
-                // page4 激活/离开时，只切换可见性，不自动激活焦点
                 setActive(page4, nextSection === 4);
                 if (nextSection !== 4 && previousSection === 4) {
                     deactivatePage4Focus();
@@ -1508,12 +1502,15 @@
                 const heroProgress = isMobile() ? Math.min(1, Math.max(0, sY / (vh * 0.72))) : progress;
                 page1.style.transform = `scale(${1 - heroProgress * 0.3})`;
                 page1.style.opacity = 1 - heroProgress;
-                const mobileSection = Math.max(0, Math.min(homeScreenCount() - 1, Math.round(sY / vh)));
-                const inWork = sY >= vh && sY < 2 * vh;
-                const inP2 = sY >= 2 * vh && sY < 3 * vh;
-                const inP3 = sY >= 3 * vh && sY < 4 * vh;
-                const inP4 = !isMobile() && sY >= 4 * vh;
-                const nextSection = isMobile() ? mobileSection : inWork ? 1 : inP2 ? 2 : inP3 ? 3 : inP4 ? 4 : 0;
+
+                const maxIndex = homeScreenCount() - 1;
+                let nextSection = Math.round(sY / vh);
+                nextSection = Math.max(0, Math.min(maxIndex, nextSection));
+                // 移动端最多显示到第3屏（page3），不显示最后一页
+                if (isMobile()) {
+                    nextSection = Math.min(nextSection, 3);
+                }
+
                 page1.classList.toggle("home-away", nextSection > 0);
                 syncHomeSection(nextSection);
                 document.body.classList.remove("smile-cursor");
