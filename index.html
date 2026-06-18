@@ -118,6 +118,10 @@
         body.smile-cursor button {
             cursor: none;
         }
+        body.smile-cursor .focus-line,
+        body.smile-cursor .focus-container {
+            cursor: none !important;
+        }
         #smile-cursor {
             position: fixed;
             top: 0;
@@ -133,15 +137,15 @@
         }
         body.smile-cursor #smile-cursor {
             opacity: 1;
-            animation: rotate-smile 2s linear infinite;
+            animation: rotate-smile 2s linear infinite, breathe-smile 1.6s ease-in-out infinite alternate;
         }
         @keyframes rotate-smile {
-            from {
-                transform: translate(-50%, -50%) rotate(0deg);
-            }
-            to {
-                transform: translate(-50%, -50%) rotate(360deg);
-            }
+            from { transform: translate(-50%, -50%) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        @keyframes breathe-smile {
+            0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            100% { transform: translate(-50%, -50%) rotate(0deg) scale(1.15); }
         }
 
         #loading-overlay {
@@ -968,64 +972,16 @@
             letter-spacing: 0.04em;
             white-space: nowrap;
             cursor: pointer;
-            filter: blur(9px);
-            opacity: 0.48;
-            transform: translateY(0) scale(0.985);
-            transition: filter 0.5s ease, opacity 0.5s ease, transform 0.5s ease;
-            will-change: filter, opacity, transform;
+            filter: none;
+            opacity: 1;
+            transform: none;
+            transition: none;
+            will-change: auto;
         }
         .focus-line:nth-child(2) {
             font-size: clamp(3.2rem, 7.8vw, 7.2rem);
             font-weight: 700;
             letter-spacing: 0.03em;
-        }
-        .focus-line.active {
-            filter: blur(0);
-            opacity: 1;
-            transform: translateY(-0.02em) scale(1);
-        }
-        .focus-frame {
-            position: absolute;
-            left: 0;
-            top: 0;
-            pointer-events: none;
-            border: 1.5px solid transparent;
-            border-radius: 14px;
-            transform: translate3d(0, 0, 0);
-            transition: transform 0.5s ease, width 0.5s ease, height 0.5s ease, opacity 0.35s ease;
-            opacity: 0;
-            z-index: 3;
-        }
-        .focus-frame .corner {
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            border-color: var(--accent);
-            filter: drop-shadow(0 0 8px rgba(255, 140, 66, 0.55));
-        }
-        .focus-frame .top-left {
-            left: -5px;
-            top: -5px;
-            border-left: 3px solid var(--accent);
-            border-top: 3px solid var(--accent);
-        }
-        .focus-frame .top-right {
-            right: -5px;
-            top: -5px;
-            border-right: 3px solid var(--accent);
-            border-top: 3px solid var(--accent);
-        }
-        .focus-frame .bottom-left {
-            left: -5px;
-            bottom: -5px;
-            border-left: 3px solid var(--accent);
-            border-bottom: 3px solid var(--accent);
-        }
-        .focus-frame .bottom-right {
-            right: -5px;
-            bottom: -5px;
-            border-right: 3px solid var(--accent);
-            border-bottom: 3px solid var(--accent);
         }
 
         .circular-text-cursor {
@@ -1879,7 +1835,6 @@
                 padding-bottom: 80px;
                 touch-action: pan-y;
             }
-            /* 【移动端优化】移除 content-visibility: auto 以加速图片渲染和IntersectionObserver检测 */
             .card-box {
                 content-visibility: visible;
                 contain-intrinsic-size: auto 320px;
@@ -2185,12 +2140,6 @@
         <div class="final-focus-wrap" aria-label="我们聊聊吧">
             <div class="focus-container focus-line-container" data-focus-mode="hover">
                 <span class="focus-word focus-line">我们聊聊吧</span>
-                <div class="focus-frame" aria-hidden="true">
-                    <span class="corner top-left"></span>
-                    <span class="corner top-right"></span>
-                    <span class="corner bottom-left"></span>
-                    <span class="corner bottom-right"></span>
-                </div>
             </div>
         </div>
     </div>
@@ -2238,54 +2187,9 @@
             let theaterActive = false;
             let theaterCleanupFn = null;
 
-            function deactivatePage4Focus() {
-                const lines = page4.querySelectorAll('.focus-line');
-                const frame = page4.querySelector('.focus-frame');
-                lines.forEach(line => line.classList.remove('active'));
-                if (frame) frame.style.opacity = '0';
-            }
+            function deactivatePage4Focus() {}
 
-            function initTrueFocus() {
-                const containers = document.querySelectorAll('.focus-line-container[data-focus-mode="hover"]');
-                containers.forEach(container => {
-                    if (container.dataset.trueFocusReady === '1') return;
-                    container.dataset.trueFocusReady = '1';
-                    const lines = Array.from(container.querySelectorAll('.focus-line'));
-                    const frame = container.querySelector('.focus-frame');
-                    let currentIndex = -1;
-
-                    function clearFocus() { currentIndex = -1;
-                        lines.forEach(line => line.classList.remove('active')); if (frame) frame.style.opacity =
-                            '0'; }
-
-                    function updateFocus(index) {
-                        const active = lines[index];
-                        if (!active || !frame) return;
-                        currentIndex = index;
-                        lines.forEach((line, lineIndex) => { line.classList.toggle('active', lineIndex ===
-                                currentIndex); });
-                        const parentRect = container.getBoundingClientRect();
-                        const activeRect = active.getBoundingClientRect();
-                        frame.style.opacity = '1';
-                        frame.style.width = `${activeRect.width}px`;
-                        frame.style.height = `${activeRect.height}px`;
-                        frame.style.transform =
-                            `translate3d(${activeRect.left - parentRect.left}px, ${activeRect.top - parentRect.top}px, 0)`;
-                    }
-                    lines.forEach((line, index) => {
-                        line.addEventListener('mouseenter', () => updateFocus(index));
-                        line.addEventListener('focus', () => updateFocus(index));
-                        line.addEventListener('click', () => updateFocus(index));
-                        line.addEventListener('blur', clearFocus);
-                        line.setAttribute('tabindex', '0');
-                    });
-                    container.addEventListener('mouseleave', clearFocus);
-                    clearFocus();
-                    window.addEventListener('resize', () => { if (currentIndex >= 0) updateFocus(
-                    currentIndex); }, { passive: true });
-                });
-            }
-            initTrueFocus();
+            function initTrueFocus() {}
 
             function initFinalCircularTextCursor() {
                 const cursor = document.getElementById('circularTextCursor');
@@ -2303,8 +2207,15 @@
                     currentY = mouseY,
                     rafId = null;
 
-                function setVisible() { document.body.classList.toggle('final-circular-cursor', page4.classList.contains(
-                        'active')); }
+                function setVisible() {
+                    const useSmileCursor = document.body.classList.contains('smile-cursor');
+                    const shouldShow = page4.classList.contains('active') && !useSmileCursor;
+                    document.body.classList.toggle('final-circular-cursor', shouldShow);
+                    if (useSmileCursor) {
+                        cursor.style.opacity = '0';
+                        cursor.style.visibility = 'hidden';
+                    }
+                }
 
                 function render() { currentX += (mouseX - currentX) * 0.22;
                     currentY += (mouseY - currentY) * 0.22;
@@ -2955,10 +2866,16 @@
                     currentIndex && Math.abs(scrollY - currentIndex * vh) < 2) return;
                 event.preventDefault(); if (snapAnimating) return;
                 smoothHomeScrollTo(targetIndex * vh); }, { passive: false });
-            document.addEventListener("mousemove", event => { lastMouseX = event.clientX;
-                lastMouseY = event.clientY; if (currentPage === "home" && scrollY >= 4 * vh) { smileCursor.style.left =
-                    `${event.clientX}px`;
-                    smileCursor.style.top = `${event.clientY}px`; } });
+
+            // 修正后的 mousemove 事件处理，确保笑脸在最后一页跟随鼠标
+            document.addEventListener("mousemove", event => {
+                lastMouseX = event.clientX;
+                lastMouseY = event.clientY;
+                if (currentPage === "home" && activeHomeSection === 4) {
+                    smileCursor.style.left = `${event.clientX}px`;
+                    smileCursor.style.top = `${event.clientY}px`;
+                }
+            });
 
             function showDetail(id) { returningHome = false;
                 savedScrollY = scrollY;
@@ -2969,7 +2886,6 @@
                 page2.classList.remove("active");
                 page3.classList.remove("active");
                 page4.classList.remove("active");
-                deactivatePage4Focus();
                 activeHomeSection = -1;
                 setHomeSnapEnabled(false);
                 document.body.classList.remove("smile-cursor");
@@ -3018,7 +2934,6 @@
                 activeHomeSection = -1;
                 loopActive = false;
                 clearTimers();
-                deactivatePage4Focus();
                 requestAnimationFrame(() => { window.scrollTo({ top: returnY, behavior: "auto" });
                     updateScroll();
                     setTimeout(() => { if (currentPage === "home") setHomeSnapEnabled(true);
@@ -3052,8 +2967,20 @@
                             .paused) video.play().catch(() => {}); }); } else if (previousSection === 3) {
                     clearTimeout(page3VideoHydrateTimer);
                     page3Videos.forEach(video => video.pause()); }
-                setActive(page4, nextSection === 4); if (nextSection !== 4 && previousSection === 4) { deactivatePage4Focus
-                (); } }
+                setActive(page4, nextSection === 4);
+                if (nextSection === 4) {
+                    document.body.classList.add('smile-cursor');
+                    document.body.classList.remove('final-circular-cursor');
+                    const circularCursor = document.getElementById('circularTextCursor');
+                    if (circularCursor) { circularCursor.style.opacity = '0';
+                        circularCursor.style.visibility = 'hidden'; }
+                    // 立即将笑脸定位到当前鼠标位置
+                    smileCursor.style.left = lastMouseX + 'px';
+                    smileCursor.style.top = lastMouseY + 'px';
+                } else if (previousSection === 4) {
+                    document.body.classList.remove('smile-cursor');
+                }
+            }
 
             function updateScroll() { if (currentPage !== "home") return;
                 const sY = scrollY; if (isMobile()) { document.body.classList.add("is-home-scrolling");
@@ -3069,7 +2996,7 @@
                         nextSection, 3); }
                 page1.classList.toggle("home-away", nextSection > 0);
                 syncHomeSection(nextSection);
-                document.body.classList.remove("smile-cursor"); }
+            }
             setPageHeight();
 
             function handleViewportResize() { cancelAnimationFrame(resizeRaf);
@@ -3096,7 +3023,6 @@
                     document.body.classList.contains("is-home-scrolling")) return;
                 window.scrollTo({ top: 0, behavior: "auto" });
                 page4.classList.remove("active");
-                deactivatePage4Focus();
                 updateScroll(); } if ("scrollRestoration" in history) history.scrollRestoration = "manual";
             window.scrollTo(0, 0);
             window.addEventListener("pageshow", () => { resetMobileHomeStart();
