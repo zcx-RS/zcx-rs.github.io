@@ -172,6 +172,8 @@
         .page4.active .final-focus-wrap{opacity:1;transform:translateY(0) scale(1);}
         .focus-container{position:relative;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(1.2rem,3vw,2.4rem);padding:clamp(0.7rem,1.6vw,1.2rem) clamp(1rem,2.2vw,1.8rem);color:#0a0a0a;user-select:none;}
         .focus-line{display:inline-block;position:relative;font-size:clamp(5.4rem,13.5vw,12.8rem);font-weight:820;line-height:1;letter-spacing:0.04em;white-space:nowrap;}
+        .typewriter-cursor{display:inline-block;font-weight:200;animation:blink 1s step-end infinite;margin-left:4px;font-size:inherit;}
+        @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
 
         .circular-text-cursor{display:none!important;}
 
@@ -310,22 +312,19 @@
         <div class="load-dots"><span></span><span></span><span></span></div>
     </div>
     <div id="smile-cursor" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 130" width="130" height="130"><defs><mask id="smileMask"><rect width="130" height="130" fill="white"></rect><circle cx="48" cy="48" r="9" fill="black"></circle><circle cx="82" cy="48" r="9" fill="black"></circle><path d="M 40 80 Q 65 104 90 80" stroke="black" stroke-width="10" fill="none" stroke-linecap="round"></path></mask></defs><circle cx="65" cy="65" r="58" fill="#FFFF00" mask="url(#smileMask)"></circle></svg></div>
-    <div id="circularTextCursor" class="circular-text-cursor" aria-hidden="true"><div class="circular-text-ring" data-text="返回顶部 · 返回顶部 · "></div></div>
-    <div class="theater-fullscreen-overlay" id="theaterOverlay" aria-hidden="true"><video id="theaterVideo" playsinline controls preload="metadata"></video></div>
-    <button class="theater-close-btn" id="theaterCloseBtn" type="button" aria-label="关闭剧院模式"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
-    <div class="scroll-snap-track" aria-hidden="true"><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div></div>
+    <div class="theater-fullscreen-overlay" id="theaterOverlay"><video id="theaterVideo" playsinline controls></video></div>
+    <button class="theater-close-btn" id="theaterCloseBtn"><svg viewBox="0 0 24 24"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2"></path></svg></button>
+    <div class="scroll-snap-track"><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div></div>
 
     <div class="page1" id="page1">
         <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
-            <div class="hero-title" id="titleMove"><span>周成鑫</span><span>—</span><img src="https://img.alicdn.com/imgextra/i1/3952997314/O1CN01BXAr6b23trxdBZpUS_!!3952997314.webp" class="profile-img" alt="头像" width="150" height="150" fetchpriority="high" decoding="async"><span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span></div>
+            <div class="hero-title" id="titleMove"><span>周成鑫</span><span>—</span><img src="https://img.alicdn.com/imgextra/i1/3952997314/O1CN01BXAr6b23trxdBZpUS_!!3952997314.webp" class="profile-img" alt="头像" width="150" height="150" fetchpriority="high"><span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span></div>
             <div class="hero-desc"><div>Hi，我是周成鑫，一名数字创意设计师 专注将创意策略转化为视觉作品</div></div>
         </main>
         <footer>
             <div class="logo-scroll-wrapper" aria-label="设计工具与技术栈">
-                <div class="logo-scroll-track" id="logoScrollTrack">
-                    <!-- 图标列表通过 JS 动态生成，确保足够数量实现无缝循环 -->
-                </div>
+                <div class="logo-scroll-track" id="logoScrollTrack"></div>
             </div>
         </footer>
     </div>
@@ -349,19 +348,24 @@
         </div>
     </div>
 
-    <div class="page4" id="page4"><div class="final-focus-wrap" aria-label="点击返回顶部"><div class="focus-container focus-line-container" data-focus-mode="hover"><span class="focus-word focus-line">我们聊聊吧</span></div></div></div>
+    <div class="page4" id="page4">
+        <div class="final-focus-wrap" aria-label="点击返回顶部">
+            <div class="focus-container">
+                <span class="focus-line" id="typewriterText"></span><span class="typewriter-cursor" id="typewriterCursor">|</span>
+            </div>
+        </div>
+    </div>
 
-    <div class="detail-page" id="detail1"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>返回作品</span></button></div>
-    <div class="detail-page" id="detail2"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>返回作品</span></button></div>
-    <div class="detail-page" id="detail3"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>返回作品</span></button></div>
+    <div class="detail-page" id="detail1"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button></div>
+    <div class="detail-page" id="detail2"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button></div>
+    <div class="detail-page" id="detail3"><div class="detail-content"></div><button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button></div>
     <div class="detail-page" id="detail4">
         <div class="detail-content"></div>
-        <div class="animation-video-modal" id="animationVideoModal" aria-hidden="true"><button class="animation-modal-close" type="button" aria-label="关闭视频"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button><video id="animationModalVideo" controls playsinline preload="metadata"></video></div>
-        <button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>返回作品</span></button>
+        <div class="animation-video-modal" id="animationVideoModal" aria-hidden="true"><button class="animation-modal-close" type="button" aria-label="关闭视频"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2"></path></svg></button><video id="animationModalVideo" controls playsinline preload="metadata"></video></div>
+        <button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button>
     </div>
 
     <script>
-        // 动态生成图标列表，确保足够数量实现无缝无限循环
         (function initLogoScroll() {
             const track = document.getElementById('logoScrollTrack');
             const iconList = [
@@ -376,27 +380,15 @@
                 { src: 'https://raw.githubusercontent.com/zcx-RS/zcx-rs.github.io/f6eb299235605987a194b32cda58da78d1bcd49c/after-effects-40.svg', alt: 'After Effects', fallback: 'Ae', name: 'After Effects' },
                 { src: 'https://raw.githubusercontent.com/zcx-RS/zcx-rs.github.io/f6eb299235605987a194b32cda58da78d1bcd49c/premiere-pro.svg', alt: 'Premiere Pro', fallback: 'Pr', name: 'Premiere Pro' }
             ];
-
             function createIconItem(icon) {
                 const span = document.createElement('span');
                 span.className = 'logo-item';
-                span.innerHTML = `
-                    <span class="logo-icon-wrap">
-                        <img src="${icon.src}" alt="${icon.alt}" onerror="this.parentElement.classList.add('error')">
-                        <span class="logo-icon-fallback">${icon.fallback}</span>
-                    </span>
-                    <span class="logo-name">${icon.name}</span>
-                `;
+                span.innerHTML = `<span class="logo-icon-wrap"><img src="${icon.src}" alt="${icon.alt}" onerror="this.parentElement.classList.add('error')"><span class="logo-icon-fallback">${icon.fallback}</span></span><span class="logo-name">${icon.name}</span>`;
                 return span;
             }
-
-            // 计算需要的组数：每组10个图标，在1920px宽屏幕上需要至少覆盖一半轨道宽度
-            // 使用8组确保在任何屏幕宽度下都能无缝循环
             const groupCount = 8;
             for (let g = 0; g < groupCount; g++) {
-                iconList.forEach(icon => {
-                    track.appendChild(createIconItem(icon));
-                });
+                iconList.forEach(icon => track.appendChild(createIconItem(icon)));
             }
         })();
     </script>
@@ -427,6 +419,8 @@
             const theaterOverlay = document.getElementById("theaterOverlay");
             const theaterVideo = document.getElementById("theaterVideo");
             const theaterCloseBtn = document.getElementById("theaterCloseBtn");
+            const typewriterEl = document.getElementById("typewriterText");
+            const typewriterCursor = document.getElementById("typewriterCursor");
 
             let theaterActive = false;
             let theaterCleanupFn = null;
@@ -441,10 +435,54 @@
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
 
-            let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, snapAnimationFrame = 0, activeHomeSection = -1, page3VideosHydrated = false, lastViewportWidth = window.innerWidth, resizeRaf = 0, scrollSettleTimer = 0, page3VideoHydrateTimer = 0;
+            let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, snapAnimationFrame = 0, activeHomeSection = -1, page3VideosHydrated = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
 
-            function escapeHtml(value) { return String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char])); }
+            // 打字机效果——中文文案
+            const typewriterTexts = ['我们聊聊吧', '期待与您合作', '让创意成为现实'];
+            let typewriterTimer = null;
+            let textIndex = 0, charIndex = 0, isDeleting = false;
+
+            function startTypewriter() {
+                if (typewriterTimer) clearTimeout(typewriterTimer);
+                textIndex = 0; charIndex = 0; isDeleting = false;
+                typewriterEl.textContent = '';
+                typewriterCursor.style.display = 'inline-block';
+                typewriterLoop();
+            }
+
+            function stopTypewriter() {
+                if (typewriterTimer) {
+                    clearTimeout(typewriterTimer);
+                    typewriterTimer = null;
+                }
+                typewriterEl.textContent = '';
+                typewriterCursor.style.display = 'none';
+            }
+
+            function typewriterLoop() {
+                const currentText = typewriterTexts[textIndex];
+                if (!isDeleting) {
+                    charIndex++;
+                    typewriterEl.textContent = currentText.substring(0, charIndex);
+                    if (charIndex === currentText.length) {
+                        typewriterTimer = setTimeout(() => { isDeleting = true; typewriterLoop(); }, 1500);
+                        return;
+                    }
+                } else {
+                    charIndex--;
+                    typewriterEl.textContent = currentText.substring(0, charIndex);
+                    if (charIndex === 0) {
+                        isDeleting = false;
+                        textIndex = (textIndex + 1) % typewriterTexts.length;
+                        typewriterTimer = setTimeout(() => typewriterLoop(), 300);
+                        return;
+                    }
+                }
+                typewriterTimer = setTimeout(typewriterLoop, isDeleting ? 40 : 75);
+            }
+
+            function escapeHtml(value) { return String(value).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
             function originalImageUrl(src) { return src; }
             function setPageHeight() {
                 document.documentElement.style.setProperty("--vh", `${window.innerHeight}px`);
@@ -541,14 +579,9 @@
             function smoothHomeScrollTo(targetY) { const root = document.documentElement; const startY = window.scrollY; const distance = targetY - startY; const prevBehavior = root.style.scrollBehavior; const prevSnap = root.style.scrollSnapType; const duration = Math.min(900, Math.max(520, Math.abs(distance) * 0.55)); const startTime = performance.now(); const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; cancelAnimationFrame(snapAnimationFrame); snapAnimating = true; root.style.scrollBehavior = "auto"; root.style.scrollSnapType = "none"; function finish() { window.scrollTo(0, targetY); root.style.scrollBehavior = prevBehavior; root.style.scrollSnapType = prevSnap; updateScroll(); setTimeout(() => { snapAnimating = false; }, 80); } function step(now) { const t = Math.min(1, (now - startTime) / duration); window.scrollTo(0, startY + distance * easeInOutCubic(t)); updateScroll(); if (t < 1) snapAnimationFrame = requestAnimationFrame(step); else finish(); } snapAnimationFrame = requestAnimationFrame(step); }
             window.addEventListener("wheel", e => { if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches || Math.abs(e.deltaY) < 6 || e.ctrlKey) return; const maxIndex = homeScreenCount() - 1; const currentIndex = Math.round(window.scrollY / vh); const direction = e.deltaY > 0 ? 1 : -1; const targetIndex = Math.max(0, Math.min(maxIndex, currentIndex + direction)); if (targetIndex === currentIndex && Math.abs(window.scrollY - currentIndex * vh) < 2) return; e.preventDefault(); if (snapAnimating) return; smoothHomeScrollTo(targetIndex * vh); }, { passive: false });
 
-            document.addEventListener("mousemove", e => {
-                lastMouseX = e.clientX; lastMouseY = e.clientY;
-                if (!isMobile() && currentPage === "home" && activeHomeSection === 4) {
-                    smileCursor.style.left = `${e.clientX}px`; smileCursor.style.top = `${e.clientY}px`;
-                }
-            });
+            document.addEventListener("mousemove", e => { lastMouseX = e.clientX; lastMouseY = e.clientY; if (!isMobile() && currentPage === "home" && activeHomeSection === 4) { smileCursor.style.left = `${e.clientX}px`; smileCursor.style.top = `${e.clientY}px`; } });
 
-            function showDetail(id) { returningHome = false; savedScrollY = window.scrollY; preloadDetailAssets(id, 999); renderDetail(id); page1.classList.add("hidden"); pageWork.classList.remove("active"); page2.classList.remove("active"); page3.classList.remove("active"); page4.classList.remove("active"); activeHomeSection = -1; setHomeSnapEnabled(false); document.body.classList.remove("smile-cursor"); const targetDetail = document.getElementById(id); const useBodyDetailScroll = mobileQuery.matches; targetDetail.classList.add("active"); targetDetail.scrollTop = 0; requestAnimationFrame(() => { targetDetail.scrollTop = 0; hydrateDetailImages(targetDetail); if (id === "detail4") { hydrateLazyVideos(targetDetail, "metadata"); targetDetail.querySelectorAll(".animation-video-card video").forEach(setAnimationCoverFrame); } }); currentPage = id; loopActive = false; clearTimers(); if (useBodyDetailScroll) { document.body.classList.add("detail-scroll-mode"); document.body.style.height = "auto"; document.body.style.overflow = "auto"; window.scrollTo(0, 0); } else { document.body.classList.remove("detail-scroll-mode"); document.body.style.overflow = "hidden"; } document.querySelectorAll(".page3 video").forEach(v => v.pause()); closeAnimationModal(); closeTheaterMode(); document.querySelectorAll(".detail-page video:not(#animationModalVideo):not(#theaterVideo)").forEach(v => { if (v.closest("#detail4 .animation-video-card")) { if (id === "detail4") setAnimationCoverFrame(v); else v.pause(); return; } v.pause(); }); }
+            function showDetail(id) { returningHome = false; savedScrollY = window.scrollY; preloadDetailAssets(id, 999); renderDetail(id); page1.classList.add("hidden"); pageWork.classList.remove("active"); page2.classList.remove("active"); page3.classList.remove("active"); page4.classList.remove("active"); activeHomeSection = -1; setHomeSnapEnabled(false); document.body.classList.remove("smile-cursor"); const targetDetail = document.getElementById(id); const useBodyDetailScroll = mobileQuery.matches; targetDetail.classList.add("active"); targetDetail.scrollTop = 0; requestAnimationFrame(() => { targetDetail.scrollTop = 0; hydrateDetailImages(targetDetail); if (id === "detail4") { hydrateLazyVideos(targetDetail, "metadata"); targetDetail.querySelectorAll(".animation-video-card video").forEach(setAnimationCoverFrame); } }); currentPage = id; loopActive = false; clearTimers(); if (useBodyDetailScroll) { document.body.classList.add("detail-scroll-mode"); document.body.style.height = "auto"; document.body.style.overflow = "auto"; window.scrollTo(0, 0); } else { document.body.classList.remove("detail-scroll-mode"); document.body.style.overflow = "hidden"; } document.querySelectorAll(".page3 video").forEach(v => v.pause()); closeAnimationModal(); closeTheaterMode(); }
             function goBack(e) { if (e) { e.preventDefault(); e.stopPropagation(); } if (returningHome) return; returningHome = true; setHomeSnapEnabled(false); const returnY = Math.max(0, Math.min(savedScrollY || 0, (homeScreenCount() - 1) * vh)); closeAnimationModal(); closeTheaterMode(); document.querySelectorAll(".detail-page video").forEach(v => { v.pause(); v.muted = true; v.controls = false; }); detailPages.forEach(p => { p.classList.remove("active"); p.scrollTop = 0; }); page1.classList.remove("hidden"); currentPage = "home"; document.body.classList.remove("detail-scroll-mode", "smile-cursor"); document.body.style.overflow = ""; setPageHeight(); activeHomeSection = -1; loopActive = false; clearTimers(); requestAnimationFrame(() => { window.scrollTo({ top: returnY, behavior: "auto" }); updateScroll(); setTimeout(() => { if (currentPage === "home") setHomeSnapEnabled(!isMobile()); returningHome = false; }, isMobile() ? 350 : 140); }); }
             document.querySelectorAll(".minimal-card[data-detail]").forEach(btn => { btn.addEventListener("click", () => showDetail(btn.dataset.detail)); btn.addEventListener("pointerenter", () => preloadDetailAssets(btn.dataset.detail, 999)); btn.addEventListener("touchstart", () => preloadDetailAssets(btn.dataset.detail, 999), { passive: true }); });
             document.querySelectorAll(".back-btn").forEach(btn => btn.addEventListener("click", goBack));
@@ -558,8 +591,19 @@
                 if (nextSection === activeHomeSection) return; const prev = activeHomeSection; activeHomeSection = nextSection;
                 setActive(pageWork, nextSection === 1); if (nextSection === 1) playWorkCards(); else if (prev === 1) resetWorkCards();
                 setActive(page2, nextSection === 2); if (nextSection === 2 && !loopActive) { loopActive = true; startSlotSpin(); } else if (prev === 2 && loopActive && nextSection !== 2) { loopActive = false; clearTimers(); yearEl.textContent = FINAL; }
-                setActive(page3, nextSection === 3); if (nextSection === 3) { scheduleWarmupDetailAssets(); if (!page3VideosHydrated) { clearTimeout(page3VideoHydrateTimer); if (isMobile()) page3VideoHydrateTimer = setTimeout(hydratePage3Videos, 250); else hydratePage3Videos(); } else page3Videos.forEach(v => { v.muted = true; if (v.paused) v.play().catch(() => {}); }); } else if (prev === 3) { clearTimeout(page3VideoHydrateTimer); page3Videos.forEach(v => v.pause()); }
-                setActive(page4, nextSection === 4); if (nextSection === 4 && !isMobile()) { document.body.classList.add('smile-cursor'); smileCursor.style.left = lastMouseX + 'px'; smileCursor.style.top = lastMouseY + 'px'; } else if (prev === 4) { document.body.classList.remove('smile-cursor'); }
+                setActive(page3, nextSection === 3); if (nextSection === 3) { scheduleWarmupDetailAssets(); if (!page3VideosHydrated) { if (isMobile()) setTimeout(hydratePage3Videos, 250); else hydratePage3Videos(); } else page3Videos.forEach(v => { v.muted = true; if (v.paused) v.play().catch(() => {}); }); } else if (prev === 3) { page3Videos.forEach(v => v.pause()); }
+                setActive(page4, nextSection === 4);
+                if (nextSection === 4) {
+                    if (!isMobile()) {
+                        document.body.classList.add('smile-cursor');
+                        smileCursor.style.left = lastMouseX + 'px';
+                        smileCursor.style.top = lastMouseY + 'px';
+                    }
+                    startTypewriter();
+                } else if (prev === 4) {
+                    document.body.classList.remove('smile-cursor');
+                    stopTypewriter();
+                }
             }
             function updateScroll() { if (currentPage !== "home") return; const sY = window.scrollY; if (isMobile()) { document.body.classList.add("is-home-scrolling"); clearTimeout(scrollSettleTimer); scrollSettleTimer = setTimeout(() => document.body.classList.remove("is-home-scrolling"), 200); } const progress = Math.min(1, Math.max(0, sY / vh)); const heroProgress = isMobile() ? Math.min(1, Math.max(0, sY / (vh * 0.72))) : progress; page1.style.transform = `scale(${1 - heroProgress * 0.3})`; page1.style.opacity = 1 - heroProgress; const maxIndex = homeScreenCount() - 1; let nextSection = Math.round(sY / vh); nextSection = Math.max(0, Math.min(maxIndex, nextSection)); page1.classList.toggle("home-away", nextSection > 0); syncHomeSection(nextSection); }
             setPageHeight();
@@ -574,9 +618,6 @@
             updateScroll();
             page4.addEventListener("click", (e) => { if (currentPage === "home" && activeHomeSection === 4) { navigateTo(0); } });
         })();
-    </script>
-    <script>
-        (() => { 'use strict'; document.addEventListener('contextmenu', e => e.preventDefault()); document.addEventListener('keydown', e => { const key = e.key.toLowerCase(); if (e.key === 'F12' || (e.ctrlKey && key === 'u') || (e.ctrlKey && e.shiftKey && ['i', 'j', 'c'].includes(key)) || (e.metaKey && e.altKey && ['i', 'j', 'c'].includes(key))) { e.preventDefault(); e.stopPropagation(); return false; } }, true); })();
     </script>
 </body>
 </html>
