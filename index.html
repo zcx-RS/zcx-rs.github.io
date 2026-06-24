@@ -41,11 +41,19 @@
             -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
             overflow-x:hidden;cursor:default;
             -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
+            /* 移动端允许垂直滚动 */
+            overflow-y:auto;
+            -webkit-overflow-scrolling:touch;
         }
         .scroll-snap-track{position:relative;width:100%;pointer-events:none;z-index:0;}
         .snap-section{width:100%;height:var(--vh,100vh);scroll-snap-align:start;scroll-snap-stop:always;}
         @media(max-width:768px),(hover:none) and (pointer:coarse){
-            body:not(.detail-scroll-mode){overscroll-behavior-y:none;}
+            /* 修复移动端滚动：移除 overscroll-behavior-y:none，改为 auto */
+            body:not(.detail-scroll-mode){
+                overscroll-behavior-y:auto;
+                overflow-y:auto;
+                -webkit-overflow-scrolling:touch;
+            }
             html.home-scroll-snap{scroll-snap-type:none;scroll-behavior:auto;}
             .snap-section{scroll-snap-align:none;scroll-snap-stop:normal;}
         }
@@ -438,7 +446,6 @@
             let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, snapAnimationFrame = 0, activeHomeSection = -1, page3VideosHydrated = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
 
-            // 打字机效果——中文文案
             const typewriterTexts = ['我们聊聊吧', '期待与您合作', '让创意成为现实'];
             let typewriterTimer = null;
             let textIndex = 0, charIndex = 0, isDeleting = false;
@@ -450,34 +457,21 @@
                 typewriterCursor.style.display = 'inline-block';
                 typewriterLoop();
             }
-
             function stopTypewriter() {
-                if (typewriterTimer) {
-                    clearTimeout(typewriterTimer);
-                    typewriterTimer = null;
-                }
+                if (typewriterTimer) { clearTimeout(typewriterTimer); typewriterTimer = null; }
                 typewriterEl.textContent = '';
                 typewriterCursor.style.display = 'none';
             }
-
             function typewriterLoop() {
                 const currentText = typewriterTexts[textIndex];
                 if (!isDeleting) {
                     charIndex++;
                     typewriterEl.textContent = currentText.substring(0, charIndex);
-                    if (charIndex === currentText.length) {
-                        typewriterTimer = setTimeout(() => { isDeleting = true; typewriterLoop(); }, 1500);
-                        return;
-                    }
+                    if (charIndex === currentText.length) { typewriterTimer = setTimeout(() => { isDeleting = true; typewriterLoop(); }, 1500); return; }
                 } else {
                     charIndex--;
                     typewriterEl.textContent = currentText.substring(0, charIndex);
-                    if (charIndex === 0) {
-                        isDeleting = false;
-                        textIndex = (textIndex + 1) % typewriterTexts.length;
-                        typewriterTimer = setTimeout(() => typewriterLoop(), 300);
-                        return;
-                    }
+                    if (charIndex === 0) { isDeleting = false; textIndex = (textIndex + 1) % typewriterTexts.length; typewriterTimer = setTimeout(() => typewriterLoop(), 300); return; }
                 }
                 typewriterTimer = setTimeout(typewriterLoop, isDeleting ? 40 : 75);
             }
@@ -511,18 +505,12 @@
             function setProgress(value) { targetProgress = Math.min(100, Math.max(0, value)); if (!progressAnim) progressAnim = requestAnimationFrame(animateProgress); }
             function trackCriticalImages() { const images = Array.from(document.querySelectorAll(".profile-img, img[fetchpriority='high']")); const sources = Array.from(new Set(images.map(img => img.currentSrc || img.src).filter(Boolean))); if (!sources.length) return Promise.resolve(); setProgress(18); let loaded = 0; const markDone = () => { loaded++; setProgress(18 + Math.round((loaded / sources.length) * 72)); }; return Promise.all(sources.map(src => new Promise(resolve => { const image = new Image(); let done = false; const finishOne = () => { if (done) return; done = true; markDone(); resolve(); }; image.decoding = "async"; image.onload = () => image.decode ? image.decode().then(finishOne).catch(finishOne) : finishOne(); image.onerror = finishOne; image.src = src; setTimeout(finishOne, 3000); if (image.complete) image.decode ? image.decode().then(finishOne).catch(finishOne) : finishOne(); }))); }
             function finishLoading() {
-                if (complete) return;
-                complete = true;
-                setProgress(100);
-                const minDisplayTime = 3000;
-                const now = performance.now();
-                const elapsed = now - LOAD_START;
-                const remaining = Math.max(0, minDisplayTime - elapsed);
+                if (complete) return; complete = true; setProgress(100);
+                const minDisplayTime = 3000; const now = performance.now(); const elapsed = now - LOAD_START; const remaining = Math.max(0, minDisplayTime - elapsed);
                 setTimeout(() => {
                     if (loadingRaf) { cancelAnimationFrame(loadingRaf); loadingRaf = null; }
                     if (progressAnim) { cancelAnimationFrame(progressAnim); progressAnim = null; }
-                    loadProgressFill.style.width = "100%";
-                    loadProgressText.textContent = "100%";
+                    loadProgressFill.style.width = "100%"; loadProgressText.textContent = "100%";
                     loadingOverlay.classList.add("fade-out");
                     setTimeout(() => { document.body.style.overflow = ""; loadingOverlay.style.display = "none"; scheduleWarmupDetailAssets(); }, isMobile() ? 280 : 500);
                 }, remaining);
@@ -594,11 +582,7 @@
                 setActive(page3, nextSection === 3); if (nextSection === 3) { scheduleWarmupDetailAssets(); if (!page3VideosHydrated) { if (isMobile()) setTimeout(hydratePage3Videos, 250); else hydratePage3Videos(); } else page3Videos.forEach(v => { v.muted = true; if (v.paused) v.play().catch(() => {}); }); } else if (prev === 3) { page3Videos.forEach(v => v.pause()); }
                 setActive(page4, nextSection === 4);
                 if (nextSection === 4) {
-                    if (!isMobile()) {
-                        document.body.classList.add('smile-cursor');
-                        smileCursor.style.left = lastMouseX + 'px';
-                        smileCursor.style.top = lastMouseY + 'px';
-                    }
+                    if (!isMobile()) { document.body.classList.add('smile-cursor'); smileCursor.style.left = lastMouseX + 'px'; smileCursor.style.top = lastMouseY + 'px'; }
                     startTypewriter();
                 } else if (prev === 4) {
                     document.body.classList.remove('smile-cursor');
