@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-CN" class="home-scroll-snap">
 <head>
@@ -976,5 +977,38 @@
             page4.addEventListener("touchend", (e) => { if (currentPage === "home" && activeHomeSection === 4) { navigateTo(0); } });
         })();
     </script>
+
+<script>
+/* ======= SAFE PERFORMANCE PATCH (non-invasive) ======= */
+(function(){
+  // reduce scroll jank
+  let ticking = false;
+  const onScroll = () => {
+    if(!ticking){
+      requestAnimationFrame(()=>{ ticking=false; });
+      ticking = true;
+    }
+  };
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  // lazy video fallback
+  const videos = document.querySelectorAll('video');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        const v = e.target;
+        if(e.isIntersecting){
+          if(!v.src && v.dataset.src) v.src = v.dataset.src;
+          v.play().catch(()=>{});
+        }else{
+          v.pause();
+        }
+      });
+    },{threshold:0.35});
+    videos.forEach(v=>io.observe(v));
+  }
+})();
+</script>
+
 </body>
 </html>
