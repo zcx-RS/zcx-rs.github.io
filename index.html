@@ -44,6 +44,12 @@
             -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
             overflow-y:auto;-webkit-overflow-scrolling:touch;
         }
+        /* 禁止图片拖拽的全局样式 */
+        img {
+            -webkit-user-drag: none;
+            user-drag: none;
+            -webkit-touch-callout: none;
+        }
         .scroll-snap-track{position:relative;width:100%;pointer-events:none;z-index:0;}
         .snap-section{width:100%;height:var(--vh,100vh);scroll-snap-align:start;scroll-snap-stop:always;}
         @media(max-width:768px),(hover:none) and (pointer:coarse){
@@ -978,12 +984,20 @@
     </script>
 
     <script>
-        /* ======= 禁止右键和F12保护 ======= */
+        /* ======= 禁止右键、F12、图片拖拽保护 ======= */
         (function() {
             // 禁止右键菜单
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 return false;
+            });
+
+            // 禁止图片拖拽（拖拽保存）
+            document.addEventListener('dragstart', function(e) {
+                if (e.target.tagName === 'IMG') {
+                    e.preventDefault();
+                    return false;
+                }
             });
 
             // 禁止F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U等开发者工具快捷键
