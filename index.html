@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN" class="home-scroll-snap">
 <head>
@@ -978,37 +977,69 @@
         })();
     </script>
 
-<script>
-/* ======= SAFE PERFORMANCE PATCH (non-invasive) ======= */
-(function(){
-  // reduce scroll jank
-  let ticking = false;
-  const onScroll = () => {
-    if(!ticking){
-      requestAnimationFrame(()=>{ ticking=false; });
-      ticking = true;
-    }
-  };
-  window.addEventListener('scroll', onScroll, {passive:true});
+    <script>
+        /* ======= 禁止右键和F12保护 ======= */
+        (function() {
+            // 禁止右键菜单
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                return false;
+            });
 
-  // lazy video fallback
-  const videos = document.querySelectorAll('video');
-  if('IntersectionObserver' in window){
-    const io = new IntersectionObserver((entries)=>{
-      entries.forEach(e=>{
-        const v = e.target;
-        if(e.isIntersecting){
-          if(!v.src && v.dataset.src) v.src = v.dataset.src;
-          v.play().catch(()=>{});
-        }else{
-          v.pause();
-        }
-      });
-    },{threshold:0.35});
-    videos.forEach(v=>io.observe(v));
-  }
-})();
-</script>
+            // 禁止F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U等开发者工具快捷键
+            document.addEventListener('keydown', function(e) {
+                // F12
+                if (e.key === 'F12' || e.keyCode === 123) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+Shift+I (打开开发者工具)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+Shift+J (打开控制台)
+                if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
+                    e.preventDefault();
+                    return false;
+                }
+                // Ctrl+U (查看源代码)
+                if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        })();
+    </script>
 
+    <script>
+        /* ======= SAFE PERFORMANCE PATCH (non-invasive) ======= */
+        (function(){
+            let ticking = false;
+            const onScroll = () => {
+                if(!ticking){
+                    requestAnimationFrame(()=>{ ticking=false; });
+                    ticking = true;
+                }
+            };
+            window.addEventListener('scroll', onScroll, {passive:true});
+
+            const videos = document.querySelectorAll('video');
+            if('IntersectionObserver' in window){
+                const io = new IntersectionObserver((entries)=>{
+                    entries.forEach(e=>{
+                        const v = e.target;
+                        if(e.isIntersecting){
+                            if(!v.src && v.dataset.src) v.src = v.dataset.src;
+                            v.play().catch(()=>{});
+                        }else{
+                            v.pause();
+                        }
+                    });
+                },{threshold:0.35});
+                videos.forEach(v=>io.observe(v));
+            }
+        })();
+    </script>
 </body>
 </html>
