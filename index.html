@@ -44,7 +44,6 @@
             -webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;
             overflow-y:auto;-webkit-overflow-scrolling:touch;
         }
-        /* 禁止图片拖拽的全局样式 */
         img {
             -webkit-user-drag: none;
             user-drag: none;
@@ -99,11 +98,10 @@
         .nav-links a:hover{transform:scaleX(1.12);}
         main{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:clamp(4rem,8vw,6.5rem);padding:1rem clamp(1.5rem,3vw,2rem) clamp(2rem,4vw,3rem);min-height:0;}
         .hero-title{display:flex;align-items:center;justify-content:center;gap:clamp(1.2rem,2.5vw,2.2rem);font-size:clamp(4rem,13vw,11rem);font-weight:700;white-space:nowrap;letter-spacing:-0.02em;line-height:1;color:#0a0a0a;margin-top:clamp(-5rem,-6vw,-3rem);transform:translateX(0) translateZ(0);backface-visibility:hidden;will-change:transform;}
+        .hero-title span{line-height:1;}
         .hero-title span:first-child{font-weight:750;}
-        .hero-title span:last-child{font-weight:650;color:#202020;}
-        .dot-text{display:inline-block;line-height:1;vertical-align:middle;font-weight:650;}
-        .middle-dot{font-size:1.1em;font-weight:700;display:inline-block;vertical-align:middle;margin:0 0.05em;}
-        .profile-img{width:clamp(70px,10vw,150px);border-radius:8px;transform:rotate(-5deg);box-shadow:0 6px 14px rgba(0,0,0,0.05);object-fit:cover;aspect-ratio:1/1;background:#ccc;border:1px solid rgba(255,255,255,0.3);cursor:pointer;}
+        .dot-text{display:inline-flex;align-items:center;line-height:1;vertical-align:middle;font-weight:650;}
+        .middle-dot{font-size:1.1em;font-weight:700;display:inline-flex;align-items:center;vertical-align:middle;margin:0 0.05em;line-height:1;}
         .hero-desc{display:grid;grid-template-columns:1fr;justify-items:center;text-align:center;gap:0;max-width:var(--w);width:100%;margin:0 auto;font-size:clamp(1rem,2vw,1.3rem);line-height:1.6;color:#1e1e1e;font-weight:550;letter-spacing:-0.01em;padding-top:clamp(1.5rem,3vw,2.8rem);position:relative;overflow:visible;}
         .hero-desc::before{content:"";position:absolute;top:0;left:0;width:100%;height:1px;background:var(--border);}
         .hero-desc div{text-align:center;white-space:nowrap;}
@@ -247,12 +245,10 @@
             .nav-links a:hover{transform:none;}
             .nav-links a:active{transform:scale(0.92);color:var(--accent);}
             main{flex:1 1 auto;min-height:0;justify-content:center;gap:clamp(1rem,3.6vh,1.65rem);padding:0 20px 8px;}
-            .hero-title{width:min(100%,360px);margin:0 auto;display:grid;grid-template-columns:auto auto;justify-content:center;justify-items:center;align-items:center;column-gap:clamp(10px,4vw,16px);row-gap:clamp(6px,2.2vw,10px);white-space:normal;font-size:clamp(2.65rem,14vw,4.45rem);line-height:0.95;text-align:center;letter-spacing:0;transform:translateX(0) translateZ(0)!important;will-change:auto;transition:transform 0.1s ease-out;}
-            .hero-title span:first-child{grid-column:1/-1;}
-            .hero-title>span:nth-of-type(2){grid-column:1;font-size:0.86em;line-height:1;}
-            .hero-title .profile-img{grid-column:2;width:clamp(66px,20vw,88px);transform:rotate(-4deg);transition:transform 0.2s ease;}
-            .hero-title .profile-img:active{transform:rotate(-4deg) scale(0.94);}
-            .hero-title .dot-text{grid-column:1/-1;font-size:clamp(1rem,5vw,1.38rem);line-height:1.1;letter-spacing:0.01em;white-space:nowrap;color:#202020;}
+            .hero-title{width:min(100%,360px);margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:clamp(10px,4vw,16px);row-gap:clamp(6px,2.2vw,10px);white-space:normal;font-size:clamp(2.65rem,14vw,4.45rem);line-height:0.95;text-align:center;letter-spacing:0;transform:translateX(0) translateZ(0)!important;will-change:auto;transition:transform 0.1s ease-out;}
+            .hero-title span:first-child{width:100%;text-align:center;}
+            .hero-title>span:nth-of-type(2){font-size:0.86em;line-height:1;}
+            .hero-title .dot-text{width:100%;justify-content:center;text-align:center;font-size:clamp(1rem,5vw,1.38rem);line-height:1.1;letter-spacing:0.01em;white-space:nowrap;color:#202020;}
             .middle-dot{margin:0 0.04em;}
             .hero-desc{width:min(100%,360px);max-width:none;grid-template-columns:1fr;gap:14px;padding-top:18px;text-align:center;font-size:clamp(0.86rem,3.7vw,1rem);line-height:1.55;}
             .hero-desc::before{left:0;width:100%;}
@@ -328,7 +324,7 @@
     <div class="page1" id="page1">
         <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
-            <div class="hero-title" id="titleMove"><span>周成鑫</span><span>—</span><img src="https://img.alicdn.com/imgextra/i1/3952997314/O1CN01BXAr6b23trxdBZpUS_!!3952997314.webp" class="profile-img" alt="头像" width="150" height="150" fetchpriority="high"><span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span></div>
+            <div class="hero-title" id="titleMove"><span>周成鑫</span><span>—</span><span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span></div>
             <div class="hero-desc"><div>Hi，我是周成鑫，一名数字创意设计师 专注将创意策略转化为视觉作品</div></div>
         </main>
         <footer>
@@ -984,15 +980,12 @@
     </script>
 
     <script>
-        /* ======= 禁止右键、F12、图片拖拽保护 ======= */
         (function() {
-            // 禁止右键菜单
             document.addEventListener('contextmenu', function(e) {
                 e.preventDefault();
                 return false;
             });
 
-            // 禁止图片拖拽（拖拽保存）
             document.addEventListener('dragstart', function(e) {
                 if (e.target.tagName === 'IMG') {
                     e.preventDefault();
@@ -1000,24 +993,19 @@
                 }
             });
 
-            // 禁止F12、Ctrl+Shift+I、Ctrl+Shift+J、Ctrl+U等开发者工具快捷键
             document.addEventListener('keydown', function(e) {
-                // F12
                 if (e.key === 'F12' || e.keyCode === 123) {
                     e.preventDefault();
                     return false;
                 }
-                // Ctrl+Shift+I (打开开发者工具)
                 if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
                     e.preventDefault();
                     return false;
                 }
-                // Ctrl+Shift+J (打开控制台)
                 if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
                     e.preventDefault();
                     return false;
                 }
-                // Ctrl+U (查看源代码)
                 if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
                     e.preventDefault();
                     return false;
@@ -1027,7 +1015,6 @@
     </script>
 
     <script>
-        /* ======= SAFE PERFORMANCE PATCH (non-invasive) ======= */
         (function(){
             let ticking = false;
             const onScroll = () => {
