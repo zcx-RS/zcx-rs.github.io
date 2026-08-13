@@ -246,36 +246,36 @@
             .nav-links a:active{transform:scale(0.92);color:var(--accent);}
             main{flex:1 1 auto;min-height:0;justify-content:center;gap:clamp(1rem,3.6vh,1.65rem);padding:0 20px 8px;}
             
-            /* 🔴 移动端排版修正：去掉横线，上下两排完美居中对齐，和截图一致 */
+            /* 🔴 移动端排版优化：防止超出屏幕 */
             .hero-title{
                 width: 100%;               
                 margin: 0 auto;
                 display: flex;
-                flex-direction: column;    /* 强制上下两排 */
-                flex-wrap: nowrap;         
+                flex-wrap: wrap;         /* 允许折行，防止文字被截断 */
                 justify-content: center;
-                align-items: center;       /* 关键：让两排文字左右居中对齐 */
-                gap: 0.2em;               
+                align-items: center;
+                gap: 0.15em;             /* 将间隙大幅缩小，避免自动折行产生巨大空隙 */
                 white-space: nowrap;       
-                font-size: clamp(2.2rem, 11vw, 4.2rem); 
-                line-height: 1.2;
+                font-size: clamp(1.8rem, 8.5vw, 3.2rem); /* 大幅缩小字号上限 */
+                line-height: 1.1;
                 text-align: center;
                 transform: translateX(0) translateZ(0)!important;
                 will-change: auto;
                 transition: transform 0.1s ease-out;
             }
             .hero-title > span {
-                display: block;            /* 每个 span 独占一行 */
-                width: 100%;               /* 占满宽度，让它们自然居中 */
+                display: inline-block;
+                width: auto;
                 text-align: center;
             }
             .hero-title .dot-text {
-                display: block;            /* 第二行独占一行 */
-                width: 100%;
+                display: inline-block;      /* 改为行内块，跟着上一行自然居中 */
+                width: auto;
                 text-align: center;
                 justify-content: center;
                 font-size: inherit;
                 color: #111;
+                word-break: keep-all;       /* 防止英文被切割 */
             }
             .middle-dot{
                 margin: 0 0.1em;
@@ -356,7 +356,7 @@
     <div class="page1" id="page1">
         <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
-            <!-- 🔴 去掉中间的 <span>—</span>，变成了两排文字 -->
+            <!-- 去掉中间的 <span>—</span>，改成了两排但允许自适应折行 -->
             <div class="hero-title" id="titleMove">
                 <span>周成鑫</span>
                 <span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span>
@@ -518,7 +518,7 @@
                 detail1: ["https://img.alicdn.com/imgextra/i2/3952997314/O1CN01vOWZn623trxiHMTAp_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ldT39L23trxhqjXDl_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01rxoKVX23trxiCM7kn_!!3952997314.webp","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01vYLSUw23trxvo1KOt_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01DIxrTk23trxhpT5nO_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01RaDxE923trxhdbbOf_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN014KCHcu23trxhynmX7_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01i8ZXX723trxhxNUDL_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01S9qKhi23trxiPe1cc_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01uHik3t23trxhXWpvh_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01JCinjy23trxhXWQys_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01wgZoK723trxhymi0w_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01tiuUo723trxhpSQF1_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01Y0XRgD23trxhpUhZC_!!3952997314.webp","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01wtoMJU23trxiCM7lp_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01SD6po223trxiCLmz6_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ZFiEUJ23trxhxM92o_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01Hya99823trxhhKUww_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN016o31Yv23trxhjgIDP_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01zpgn1V23trxiNKiUb_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01VuVvEN23trxiAl4ON_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01ELrqDp23trxdJqnyi_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01LtEpYd23trxhydvJ1_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01WkTQFl23trxiLWLhL_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01yRoo2x23trxlfJHgO_!!3952997314.png","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01oMZhxW23trxlvnUoN_!!3952997314.png","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01xwj9R023trxlrzqmN_!!3952997314.png","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01WFAFWO23trxqfKeJh_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01v2CWQh23trxloAbZ0_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01bBRRvf23trxq9EYsh_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01ylZOAPWYBEB1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01k08HhHSSf7E1bRyA_!!3952997314.webp",
-                "https://img.alicdn.com/imgextra/i1/3952997314/O1CN010nxAYwT8ADI1bRyA_!!3952997314.webp"
+                "https://img.alicdn.com/imgextra/i1/3952997314/O1CN01d1FWY1LSgVJ1bRyA_!!3952997314.webp"
                 ],
                 detail2: ["https://img.alicdn.com/imgextra/i2/3952997314/O1CN011vvXff23trxi7PiRZ_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01irl2An23trxjSAHyR_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01W3XUvc23trxjSAQIT_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01NEyvgV23trxjVxGJC_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01tg8g5m23trxjWiK44_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01jVXWM723trxi9hyb1_!!3952997314.webp"]
             };
@@ -710,7 +710,7 @@
 
             function eagerImageCount(id) { if (isMobile()) return id === "detail3" ? 1 : 4; if (id === "detail3") return 1; return 6; }
 
-            function imageTag(src, index, alt, eagerLimit) { const url = escapeHtml(originalImageUrl(src)); const altText = escapeHtml(alt); const loading = index < eagerLimit ? "eager" : "eager"; const fetchpriority = index < (isMobile() ? 4 : 8) ? "high" : "auto"; return `<img src="${url}" data-original-src="${url}" alt="${altText}" loading="${loading}" decoding="async" fetchpriority="${fetchpriority}">`; }
+            function imageTag(src, index, alt, eagerLimit) { const url = escapeHtml(originalImageUrl(src)); const altText = escapeHtml(alt); const loading = index < eagerLimit ? "eager" : "lazy"; const fetchpriority = index < (isMobile() ? 4 : 8) ? "high" : "auto"; return `<img src="${url}" data-original-src="${url}" alt="${altText}" loading="${loading}" decoding="async" fetchpriority="${fetchpriority}">`; }
 
             function galleryMarkup(id, images) { const limit = eagerImageCount(id); return `<div class="cards-grid">${images.map((src, i) => `<div class="card-box">${imageTag(src, i, `作品${i + 1}`, limit)}</div>`).join("")}</div>`; }
 
@@ -1039,7 +1039,7 @@
                     startTypewriter(); } else if (prev === 4) { document.body.classList.remove('smile-cursor');
                     stopTypewriter(); }
                 
-                // 移动端：同步page1的显示状态 (⚠️ 删除了原版的缩放动画逻辑)
+                // 移动端：同步page1的显示状态
                 if (isMobile()) {
                     if (nextSection === 0) {
                         page1.classList.remove("home-away");
