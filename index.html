@@ -245,11 +245,43 @@
             .nav-links a:hover{transform:none;}
             .nav-links a:active{transform:scale(0.92);color:var(--accent);}
             main{flex:1 1 auto;min-height:0;justify-content:center;gap:clamp(1rem,3.6vh,1.65rem);padding:0 20px 8px;}
-            .hero-title{width:min(100%,360px);margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;column-gap:clamp(10px,4vw,16px);row-gap:clamp(6px,2.2vw,10px);white-space:normal;font-size:clamp(2.65rem,14vw,4.45rem);line-height:0.95;text-align:center;letter-spacing:0;transform:translateX(0) translateZ(0)!important;will-change:auto;transition:transform 0.1s ease-out;}
-            .hero-title span:first-child{width:100%;text-align:center;}
-            .hero-title>span:nth-of-type(2){font-size:0.86em;line-height:1;}
-            .hero-title .dot-text{width:100%;justify-content:center;text-align:center;font-size:clamp(1rem,5vw,1.38rem);line-height:1.1;letter-spacing:0.01em;white-space:nowrap;color:#202020;}
-            .middle-dot{margin:0 0.04em;}
+            
+            /* 🔴 移动端排版修正：去掉横线，上下两排完美居中对齐，和截图一致 */
+            .hero-title{
+                width: 100%;               
+                margin: 0 auto;
+                display: flex;
+                flex-direction: column;    /* 强制上下两排 */
+                flex-wrap: nowrap;         
+                justify-content: center;
+                align-items: center;       /* 关键：让两排文字左右居中对齐 */
+                gap: 0.2em;               
+                white-space: nowrap;       
+                font-size: clamp(2.2rem, 11vw, 4.2rem); 
+                line-height: 1.2;
+                text-align: center;
+                transform: translateX(0) translateZ(0)!important;
+                will-change: auto;
+                transition: transform 0.1s ease-out;
+            }
+            .hero-title > span {
+                display: block;            /* 每个 span 独占一行 */
+                width: 100%;               /* 占满宽度，让它们自然居中 */
+                text-align: center;
+            }
+            .hero-title .dot-text {
+                display: block;            /* 第二行独占一行 */
+                width: 100%;
+                text-align: center;
+                justify-content: center;
+                font-size: inherit;
+                color: #111;
+            }
+            .middle-dot{
+                margin: 0 0.1em;
+                display: inline-block;
+            }
+
             .hero-desc{width:min(100%,360px);max-width:none;grid-template-columns:1fr;gap:14px;padding-top:18px;text-align:center;font-size:clamp(0.86rem,3.7vw,1rem);line-height:1.55;}
             .hero-desc::before{left:0;width:100%;}
             .hero-desc div{margin:0;text-align:center;justify-self:center;white-space:normal;}
@@ -324,7 +356,11 @@
     <div class="page1" id="page1">
         <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
-            <div class="hero-title" id="titleMove"><span>周成鑫</span><span>—</span><span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span></div>
+            <!-- 🔴 去掉中间的 <span>—</span>，变成了两排文字 -->
+            <div class="hero-title" id="titleMove">
+                <span>周成鑫</span>
+                <span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span>
+            </div>
             <div class="hero-desc"><div>Hi，我是周成鑫，一名数字创意设计师 专注将创意策略转化为视觉作品</div></div>
         </main>
         <footer>
@@ -377,7 +413,7 @@
                 {
                     name: 'Cinema 4D',
                     fallback: 'C4',
-                    svg: `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="c4d-grad" x1="-364.7" y1="433.3" x2="-508.7" y2="246.6" gradientTransform="translate(539 484.3) scale(1 -1)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#71d0ff"/><stop offset="1" stop-color="#2d12d3"/></linearGradient><radialGradient id="c4d-radial" cx="-841.8" cy="670.6" r="2.2" gradientTransform="translate(-47997.6 5612.8) rotate(135) scale(45.1 -44.9)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#71d0ff"/><stop offset="1" stop-color="#524cf6"/></radialGradient></defs><path fill="#2b2ca3" d="M111.7,2.2L22,54c-5.1,2.9-8.3,8.4-8.3,14.3v103.5c0,5.9,3.2,11.4,8.3,14.3l89.7,51.7c5.1,2.9,11.4,2.9,16.5,0l89.7-51.7c5.1-2.9,8.3-8.4,8.3-14.3v-103.5c0-5.9-3.2-11.4-8.3-14.3L128.3,2.2c-5.1-2.9-11.4-2.9-16.5,0Z"/><path fill="url(#c4d-grad)" d="M195.8,120.3c0-5.3,0-10.3-1.1-15.6-.5-2.7-1.2-7.3-2.8-10.6-.7-1.3-1.5-2.4-2.5-3.1-7.9-4.7-13.3,10.7-14.1,16.1-5,33.4-14.2,47.7-24.2,58.3 0,0,0,0,0,0-.6.7-1.2,1.3-1.8,1.9-4.5,4.3-16.6,14.2-34.4,14.5-14.2-.2-28.3-5.6-39.1-16.5-10.8-10.8-16.3-24.9-16.5-39.1.2-17.7,10.2-29.9,14.5-34.3.6-.6,1.3-1.2,1.9-1.8 0,0,0,0,0,0,10.6-9.9,24.9-19.1,58.3-24.1,5.3-.8,20.8-6.2,16.1-14.1-.6-1-1.7-1.9-3.1-2.5-3.3-1.6-8-2.3-10.6-2.8-5.2-1-10.3-1.1-15.6-1.1-41.5,0-75.1,33.6-75.1,75s7.7,38.7,21.8,52.9h.1c14.2,14.2,32.9,21.9,52.9,21.9,41.5,0,75.1-33.6,75.1-75h0Z"/><path fill="url(#c4d-radial)" d="M148.3,147.2c.1-.1.2-.2.4-.3,4.9-4.4,7.5-9.3,8.2-10.6,4.2-9.1,6.5-19.1,8-29,0-.1,2.3-13.1,9.6-16.5.3-.1.6-.2.8-.3-2.2-4.8-5.3-9.3-9.2-13.2-.3-.3-.6-.6-.9-.8-.3-.3-.6-.6-.8-.9-3.9-3.9-8.4-7-13.2-9.2,0,.3-.2.6-.3.8-3.5,7.3-16.4,9.6-16.5,9.6-9.8,1.5-19.8,3.9-29,8-1.2.6-5.3,2.8-9.3,6.9,0,0,0,0-.1.1,0,0-.2.2-.2.3-.2.2-.4.4-.6.7-13.5,14.5-12.9,37.6,1.7,52.2,14.2,14.2,36.5,15.2,51.1,2.8.2-.2.4-.3.6-.5h0Z"/></svg>`
+                    svg: `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="c4d-grad" x1="-364.7" y1="433.3" x2="-508.7" y2="246.6" gradientTransform="translate(539 484.3) scale(1 -1)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#71d0ff"/><stop offset="1" stop-color="#2d12d3"/></linearGradient><radialGradient id="c4d-radial" cx="-841.8" cy="670.6" r="2.2" gradientTransform="translate(-47997.6 5612.8) rotate(135) scale(45.1 -44.9)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#71d0ff"/><stop offset="1" stop-color="#524cf6"/></radialGradient></defs><path fill="#2b2ca3" d="M111.7,2.2L22,54c-5.1,2.9-8.3,8.4-8.3,14.3v103.5c0,5.9,3.2,11.4,8.3,14.3l89.7,51.7c5.1,2.9,11.4,2.9,16.5,0l89.7-51.7c5.1-2.9,8.3-8.4,8.3-14.3v-103.5c0-5.9-3.2-11.4-8.3-14.3L128.3,2.2c-5.1-2.9-11.4-2.9-16.5,0Z"/><path fill="url(#c4d-grad)" d="M195.8,120.3c0-5.3,0-10.3-1.1-15.6-.5-2.7-1.2-7.3-2.8-10.6-.7-1.3-1.5-2.4-2.5-3.1-7.9-4.7-13.3,10.7-14.1,16.1-5,33.4-14.2,47.7-24.2,58.3 0,0,0,0,0,0-.6.7-1.2,1.3-1.8,1.9-4.5,4.3-16.6,14.2-34.4,14.5-14.2-.2-28.3-5.6-39.1-16.5-10.8-10.8-16.3-24.9-16.5-39.1.2-17.7,10.2-29.9,14.5-34.3.6-.6,1.3-1.2,1.9-1.8 0,0,0,0,0,0,10.6-9.9,24.9-19.1,58.3-24.1,5.3-.8,20.8-6.2,16.1-14.1-.6-1-1.7-1.9-3.1-2.5-3.3-1.6-8-2.3-10.6-2.8-5.2-1-10.3-1.1-15.6-1.1-41.5,0-75.1,33.6-75.1,75s7.7,38.7,21.8,52.9h.1c14.2,14.2,32.9,21.9,52.9,21.9,41.5,0,75.1-33.6,75.1-75h0Z"/><path fill="url(#c4d-radial)" d="M148.3,147.2c.1-.1.2-.2.4-.3,4.9-4.4,7.5-9.3,8.2-10.6,4.2-9.1,6.5-19.1,8-29,0-.1,2.3-13.1,9.6-16.5.3-.1.6-.2.8-.3-2.2-4.8-5.3-9.3-9.2-13.2-.3-.3-.6-.6-.9-.8-.3-.3-.6-.6-.8-.9-3.9-3.9-8.4-7-13.2-9.2,0,.3-.2,.6-.3,.8-3.5,7.3-16.4,9.6-16.5,9.6-9.8,1.5-19.8,3.9-29,8-1.2.6-5.3,2.8-9.3,6.9,0,0,0,0-.1.1,0,0-.2.2-.2.3-.2.2-.4.4-.6.7-13.5,14.5-12.9,37.6,1.7,52.2,14.2,14.2,36.5,15.2,51.1,2.8.2-.2.4-.3.6-.5h0Z"/></svg>`
                 },
                 {
                     name: 'Redshift',
@@ -402,7 +438,7 @@
                 {
                     name: 'Style3D',
                     fallback: 'S3',
-                    svg: `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="style3d-bg" x1="120" y1="0" x2="120" y2="239.9" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#015ffb"/><stop offset="1" stop-color="#003259"/></linearGradient></defs><path fill="url(#style3d-bg)" d="M197.1,0H43.1C19.4,0,0,19.4,0,43.1v153.9c0,23.8,19.3,43,43,43h153.9c23.8,0,43-19.3,43-43V43.1C239.9,19.3,220.6,0,196.9,0h.1Z"/><g><path fill="#fff" d="M79.9,132.9c3-3.1,33.5,24.4,40,24.5s31-17.8,32.6-20.4c.9-1.4,1.1-2.7,0-4.1-5.9-5.3-33.4-20.4-34.6-26.4s-.4-8.3,0-10.8-.8-2.3,2-2c7.9,7.8,32.4,19.2,38,27.1,3.7,5.3,3.3,24.6-1.3,29.8s-28.3,20.9-30.9,21.9-4.2,1.4-7,1c-8.1-1.1-27.9-20.3-36.6-24.4-3.5-4.3-1.7-11-2.1-16.2Z"/><path fill="#fff" d="M159.9,103.1c-2.2.5-3.1-.4-4.8-1.3-7.1-3.8-29.7-23.1-35.2-23.2s-3.4.9-5.2,1.7-25.4,16.7-26.6,18.1-2,2.6-1.2,4.5c4.5,4.2,27.7,16.7,29.7,20.1s2.3,16.7-.8,16.6l-32.5-23.1c-5.3-6.4-4.9-25.3.7-31.7s28.4-20.7,30.1-21.4c7-2.9,10.5.2,16.1,3.5,3.6,2.2,27,18.5,28.4,20.4,2.7,3.7.7,11.1,1.3,15.7Z"/></g></svg>`
+                    svg: `<svg viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="style3d-bg" x1="120" y1="0" x2="120" y2="239.9" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#015ffb"/><stop offset="1" stop-color="#003259"/></linearGradient></defs><path fill="url(#style3d-bg)" d="M197.1,0H43.1C19.4,0,0,19.4,0,43.1v153.9c0,23.8,19.3,43,43,43h153.9c23.8,0,43-19.3,43-43V43.1C239.9,19.3,220.6,0,196.9,0h.1Z"/><g><path fill="#fff" d="M79.9,132.9c3-3.1,33.5,24.4,40,24.5s31-17.8,32.6-20.4c.9-1.4,1.1-2.7,0-4.1-5.9-5.3-33.4-20.4-34.6-26.4s-.4-8.3,0-10.8-.8-2.3,2-2c7.9,7.8,32.4,19.2,38,27.1,3.7,5.3,3.3,24.6-1.3,29.8s-28.3,20.9-30.9,21.9-4.2,1.4-7,1c-8.1-1.1-27.9-20.3-36.6-24.4-3.5-4.3-1.7-11-2.1-16.2Z"/><path fill="#fff" d="M159.9,103.1c-2.2.5-3.1-.4-4.8-1.3-7.1-3.8-29.7-23.1-35.2-23.2s-3.4.9-5.2,1.7-25.4,16.7-26.6,18.1-2,2.6-1.2,4.5c4.5,4.2,27.7,16.7,29.7,20.1s2.3,16.7-.8,16.6l-32.5-23.1c-5.3-6.4-4.9-25.3.7-31.7s28.4-20.7,30.1-21.4c7-2.9,10.5.2,16.1,3.5,3.6,2.2,27,18.5,28.4,20.4,2.7,3.7,.7,11.1,1.3,15.7Z"/></g></svg>`
                 },
                 {
                     name: 'Photoshop',
@@ -482,7 +518,7 @@
                 detail1: ["https://img.alicdn.com/imgextra/i2/3952997314/O1CN01vOWZn623trxiHMTAp_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ldT39L23trxhqjXDl_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01rxoKVX23trxiCM7kn_!!3952997314.webp","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01vYLSUw23trxvo1KOt_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01DIxrTk23trxhpT5nO_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01RaDxE923trxhdbbOf_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN014KCHcu23trxhynmX7_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01i8ZXX723trxhxNUDL_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01S9qKhi23trxiPe1cc_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01uHik3t23trxhXWpvh_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01JCinjy23trxhXWQys_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01wgZoK723trxhymi0w_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01tiuUo723trxhpSQF1_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01Y0XRgD23trxhpUhZC_!!3952997314.webp","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01wtoMJU23trxiCM7lp_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01SD6po223trxiCLmz6_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ZFiEUJ23trxhxM92o_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01Hya99823trxhhKUww_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN016o31Yv23trxhjgIDP_!!3952997314.webp","https://img.alicdn.com/imgextra/i2/3952997314/O1CN01zpgn1V23trxiNKiUb_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01VuVvEN23trxiAl4ON_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01ELrqDp23trxdJqnyi_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01LtEpYd23trxhydvJ1_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01WkTQFl23trxiLWLhL_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01yRoo2x23trxlfJHgO_!!3952997314.png","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01oMZhxW23trxlvnUoN_!!3952997314.png","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01xwj9R023trxlrzqmN_!!3952997314.png","https://img.alicdn.com/imgextra/i4/3952997314/O1CN01WFAFWO23trxqfKeJh_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01v2CWQh23trxloAbZ0_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01bBRRvf23trxq9EYsh_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01ylZOAPWYBEB1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01k08HhHSSf7E1bRyA_!!3952997314.webp",
-                "https://img.alicdn.com/imgextra/i1/3952997314/O1CN01d1FWY1LSgVJ1bRyA_!!3952997314.webp"
+                "https://img.alicdn.com/imgextra/i1/3952997314/O1CN010nxAYwT8ADI1bRyA_!!3952997314.webp"
                 ],
                 detail2: ["https://img.alicdn.com/imgextra/i2/3952997314/O1CN011vvXff23trxi7PiRZ_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01irl2An23trxjSAHyR_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01W3XUvc23trxjSAQIT_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01NEyvgV23trxjVxGJC_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01tg8g5m23trxjWiK44_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01jVXWM723trxi9hyb1_!!3952997314.webp"]
             };
@@ -1003,7 +1039,7 @@
                     startTypewriter(); } else if (prev === 4) { document.body.classList.remove('smile-cursor');
                     stopTypewriter(); }
                 
-                // 移动端：同步page1的显示状态
+                // 移动端：同步page1的显示状态 (⚠️ 删除了原版的缩放动画逻辑)
                 if (isMobile()) {
                     if (nextSection === 0) {
                         page1.classList.remove("home-away");
@@ -1012,6 +1048,7 @@
                     } else {
                         page1.classList.add("home-away");
                         page1.style.opacity = "0";
+                        page1.style.transform = "scale(1)";
                     }
                 }
             }
