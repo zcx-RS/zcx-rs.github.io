@@ -246,17 +246,16 @@
             .nav-links a:active{transform:scale(0.92);color:var(--accent);}
             main{flex:1 1 auto;min-height:0;justify-content:center;gap:clamp(1rem,3.6vh,1.65rem);padding:0 20px 8px;}
             
-            /* 🔴 移动端排版优化：防止超出屏幕 */
             .hero-title{
                 width: 100%;               
                 margin: 0 auto;
                 display: flex;
-                flex-wrap: wrap;         /* 允许折行，防止文字被截断 */
+                flex-wrap: wrap;
                 justify-content: center;
                 align-items: center;
-                gap: 0.15em;             /* 将间隙大幅缩小，避免自动折行产生巨大空隙 */
+                gap: 0.15em;
                 white-space: nowrap;       
-                font-size: clamp(1.8rem, 8.5vw, 3.2rem); /* 大幅缩小字号上限 */
+                font-size: clamp(1.8rem, 8.5vw, 3.2rem);
                 line-height: 1.1;
                 text-align: center;
                 transform: translateX(0) translateZ(0)!important;
@@ -269,13 +268,13 @@
                 text-align: center;
             }
             .hero-title .dot-text {
-                display: inline-block;      /* 改为行内块，跟着上一行自然居中 */
+                display: inline-block;
                 width: auto;
                 text-align: center;
                 justify-content: center;
                 font-size: inherit;
                 color: #111;
-                word-break: keep-all;       /* 防止英文被切割 */
+                word-break: keep-all;
             }
             .middle-dot{
                 margin: 0 0.1em;
@@ -343,6 +342,7 @@
     </style>
 </head>
 <body>
+    <!-- 页面内容保持不变 -->
     <div id="loading-overlay">
         <div class="frame"><svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><g id="load-group"><path id="load-path" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" opacity="0.25"></path></g></svg></div>
         <div class="load-meta"><div class="load-title">Heart Wave</div><div class="load-tag">f(x) Heart Wave · 加载中</div><div class="load-progress-wrap"><div class="load-progress-bar"><div class="load-progress-fill" id="loadProgressFill"></div></div><span class="load-progress-text" id="loadProgressText">0%</span></div></div>
@@ -356,7 +356,6 @@
     <div class="page1" id="page1">
         <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
-            <!-- 去掉中间的 <span>—</span>，改成了两排但允许自适应折行 -->
             <div class="hero-title" id="titleMove">
                 <span>周成鑫</span>
                 <span class="dot-text">3D<span class="middle-dot">·</span>TYPESPORTFOLIO</span>
@@ -407,6 +406,7 @@
     </div>
 
     <script>
+        // Logo滚动初始化（保持原样）
         (function initLogoScroll() {
             const track = document.getElementById('logoScrollTrack');
             const iconList = [
@@ -482,6 +482,7 @@
         })();
     </script>
     <script>
+        // 主要脚本逻辑
         const LOAD_START = window.__LOAD_START__ || performance.now();
         (() => {
             'use strict';
@@ -528,7 +529,7 @@
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
 
-            let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, snapAnimationFrame = 0, activeHomeSection = 0, page3VideosHydrated = false;
+            let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, activeHomeSection = 0, page3VideosHydrated = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
 
             const typewriterTexts = ['我们聊聊吧', '期待与您合作', '让创意成为现实'];
@@ -870,6 +871,159 @@
                 document.addEventListener("mouseleave", () => { window.mouseX = 0; });
                 requestAnimationFrame(animateTitle); }
 
+            // ============ 优化的滚动系统（使用 easeInOutQuint） ============
+            const EasingFunctions = {
+                easeOutExpo: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
+                easeInOutExpo: t => {
+                    if (t === 0) return 0;
+                    if (t === 1) return 1;
+                    return t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
+                },
+                easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+                // 主要缓动函数 - 五次方缓动，最平滑
+                easeInOutQuint: t => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2,
+                easeInOutQuart: t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
+                smoothStep: t => t * t * t * (t * (t * 6 - 15) + 10)
+            };
+
+            class SmoothScrollManager {
+                constructor() {
+                    this.currentAnimation = null;
+                    this.velocity = 0;
+                    this.lastScrollY = window.scrollY;
+                    this.lastTime = performance.now();
+                    this.isAnimating = false;
+                }
+
+                calculateDuration(distance, currentVelocity = 0) {
+                    const absDistance = Math.abs(distance);
+                    let baseDuration;
+                    
+                    if (absDistance < vh * 0.3) baseDuration = 400;
+                    else if (absDistance < vh * 0.5) baseDuration = 450 + absDistance * 0.35;
+                    else if (absDistance < vh * 1.5) baseDuration = 500 + absDistance * 0.3;
+                    else if (absDistance < vh * 3) baseDuration = 600 + absDistance * 0.25;
+                    else baseDuration = Math.min(1200, 800 + absDistance * 0.2);
+                    
+                    const velocityFactor = Math.max(0.7, 1 - Math.abs(currentVelocity) * 0.0008);
+                    baseDuration *= velocityFactor;
+                    
+                    return Math.max(350, Math.min(1000, Math.round(baseDuration)));
+                }
+
+                selectEasing(distance, isBoundary = false) {
+                    // 统一使用 easeInOutQuint，让所有滚动都平滑
+                    return EasingFunctions.easeInOutQuint;
+                }
+
+                isAtBoundary(targetIndex) {
+                    return targetIndex <= 0 || targetIndex >= homeScreenCount() - 1;
+                }
+
+                calculateVelocity() {
+                    const now = performance.now();
+                    const currentY = window.scrollY;
+                    const deltaTime = now - this.lastTime;
+                    if (deltaTime > 0) this.velocity = (currentY - this.lastScrollY) / deltaTime;
+                    this.lastScrollY = currentY;
+                    this.lastTime = now;
+                    return this.velocity;
+                }
+
+                smoothScrollTo(targetY, options = {}) {
+                    const { duration = null, easing = null, onComplete = null } = options;
+                    
+                    if (this.currentAnimation) {
+                        cancelAnimationFrame(this.currentAnimation);
+                    }
+                    
+                    const startY = window.scrollY;
+                    const distance = targetY - startY;
+                    
+                    if (Math.abs(distance) < 1) {
+                        if (onComplete) onComplete();
+                        return;
+                    }
+                    
+                    const currentVelocity = this.calculateVelocity();
+                    const calculatedDuration = duration || this.calculateDuration(distance, currentVelocity);
+                    const targetIndex = Math.round(targetY / vh);
+                    const isBoundary = this.isAtBoundary(targetIndex);
+                    
+                    // 使用 easeInOutQuint 缓动
+                    const selectedEasing = easing || EasingFunctions.easeInOutQuint;
+                    
+                    const startTime = performance.now();
+                    this.isAnimating = true;
+
+                    const animate = (now) => {
+                        const elapsed = now - startTime;
+                        const progress = Math.min(1, elapsed / calculatedDuration);
+                        
+                        // 应用缓动函数
+                        const easedProgress = selectedEasing(progress);
+                        
+                        // 计算当前位置
+                        const currentY = startY + distance * easedProgress;
+                        
+                        // 使用平滑滚动
+                        window.scrollTo({
+                            top: currentY,
+                            behavior: 'auto'
+                        });
+                        
+                        this.calculateVelocity();
+                        
+                        if (progress < 1) {
+                            this.currentAnimation = requestAnimationFrame(animate);
+                        } else {
+                            this.isAnimating = false;
+                            this.currentAnimation = null;
+                            window.scrollTo(0, targetY);
+                            if (onComplete) onComplete();
+                            updateScroll();
+                        }
+                    };
+                    
+                    this.currentAnimation = requestAnimationFrame(animate);
+                }
+
+                cancel() {
+                    if (this.currentAnimation) {
+                        cancelAnimationFrame(this.currentAnimation);
+                        this.currentAnimation = null;
+                    }
+                    this.isAnimating = false;
+                }
+            }
+
+            const scrollManager = new SmoothScrollManager();
+
+            function smoothHomeScrollTo(targetY) {
+                const root = document.documentElement;
+                const prevBehavior = root.style.scrollBehavior;
+                const prevSnap = root.style.scrollSnapType;
+                
+                root.style.scrollBehavior = "auto";
+                root.style.scrollSnapType = "none";
+                
+                snapAnimating = true;
+                
+                const finishScroll = () => {
+                    root.style.scrollBehavior = prevBehavior;
+                    root.style.scrollSnapType = prevSnap;
+                    updateScroll();
+                    setTimeout(() => { 
+                        snapAnimating = false; 
+                    }, 80);
+                };
+                
+                scrollManager.smoothScrollTo(targetY, { 
+                    onComplete: finishScroll,
+                    easing: EasingFunctions.easeInOutQuint
+                });
+            }
+
             function navigateTo(y) {
                 if (currentPage !== "home") {
                     detailPages.forEach(p => p.classList.remove("active"));
@@ -889,40 +1043,104 @@
                     const targetSection = Math.max(0, Math.min(homeScreenCount() - 1, Math.round(y / vh)));
                     syncHomeSection(targetSection);
                 } else {
-                    window.scrollTo({ top: y, behavior: "smooth" });
+                    if (snapAnimating) scrollManager.cancel();
+                    const targetIndex = Math.round(y / vh);
+                    
+                    scrollManager.smoothScrollTo(y, {
+                        easing: EasingFunctions.easeInOutQuint,
+                        onComplete: () => {
+                            updateScroll();
+                            setTimeout(() => { snapAnimating = false; }, 80);
+                        }
+                    });
+                    snapAnimating = true;
                     setTimeout(updateScroll, 50);
                 }
             }
-            document.getElementById("homeLink").addEventListener("click", e => { e.preventDefault();
-                navigateTo(0); });
-            document.getElementById("aboutLink").addEventListener("click", e => { e.preventDefault();
-                navigateTo(1 * vh); });
-            document.getElementById("workLink").addEventListener("click", e => { e.preventDefault();
-                navigateTo(3 * vh); });
 
-            function smoothHomeScrollTo(targetY) { const root = document.documentElement; const startY = window.scrollY; const distance = targetY - startY; const prevBehavior = root.style.scrollBehavior; const prevSnap = root.style.scrollSnapType; const duration = Math.min(900, Math.max(520, Math.abs(distance) * 0.55)); const startTime = performance.now(); const easeInOutCubic = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-                cancelAnimationFrame(snapAnimationFrame);
-                snapAnimating = true;
-                root.style.scrollBehavior = "auto";
-                root.style.scrollSnapType = "none";
+            document.getElementById("homeLink").addEventListener("click", e => { e.preventDefault(); navigateTo(0); });
+            document.getElementById("aboutLink").addEventListener("click", e => { e.preventDefault(); navigateTo(1 * vh); });
+            document.getElementById("workLink").addEventListener("click", e => { e.preventDefault(); navigateTo(3 * vh); });
 
-                function finish() { window.scrollTo(0, targetY);
-                    root.style.scrollBehavior = prevBehavior;
-                    root.style.scrollSnapType = prevSnap;
-                    updateScroll();
-                    setTimeout(() => { snapAnimating = false; }, 80); }
+            window.addEventListener("wheel", e => {
+                if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches || Math.abs(e.deltaY) < 6 || e.ctrlKey) return;
+                
+                const maxIndex = homeScreenCount() - 1;
+                const currentIndex = Math.round(window.scrollY / vh);
+                const direction = e.deltaY > 0 ? 1 : -1;
+                const targetIndex = Math.max(0, Math.min(maxIndex, currentIndex + direction));
+                
+                if (targetIndex === currentIndex && Math.abs(window.scrollY - currentIndex * vh) < 2) return;
+                
+                e.preventDefault();
+                if (snapAnimating) scrollManager.cancel();
+                
+                smoothHomeScrollTo(targetIndex * vh);
+            }, { passive: false });
 
-                function step(now) { const t = Math.min(1, (now - startTime) / duration);
-                    window.scrollTo(0, startY + distance * easeInOutCubic(t));
-                    updateScroll(); if (t < 1) snapAnimationFrame = requestAnimationFrame(step); else finish(); }
-                snapAnimationFrame = requestAnimationFrame(step); }
-            window.addEventListener("wheel", e => { if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches || Math.abs(e.deltaY) < 6 || e.ctrlKey) return; const maxIndex = homeScreenCount() - 1; const currentIndex = Math.round(window.scrollY / vh); const direction = e.deltaY > 0 ? 1 : -1; const targetIndex = Math.max(0, Math.min(maxIndex, currentIndex + direction)); if (targetIndex === currentIndex && Math.abs(window.scrollY - currentIndex * vh) < 2) return;
-                e.preventDefault(); if (snapAnimating) return;
-                smoothHomeScrollTo(targetIndex * vh); }, { passive: false });
+            // 键盘导航
+            document.addEventListener("keydown", e => {
+                if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches) return;
+                
+                const navKeys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "];
+                if (!navKeys.includes(e.key)) return;
+                
+                if (snapAnimating) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                const maxIndex = homeScreenCount() - 1;
+                const currentIndex = Math.round(window.scrollY / vh);
+                let targetIndex = currentIndex;
 
-            document.addEventListener("mousemove", e => { lastMouseX = e.clientX;
-                lastMouseY = e.clientY; if (!isMobile() && currentPage === "home" && activeHomeSection === 4) { smileCursor.style.left = `${e.clientX}px`;
-                    smileCursor.style.top = `${e.clientY}px`; } });
+                switch(e.key) {
+                    case "ArrowDown":
+                    case "PageDown":
+                    case " ":
+                        e.preventDefault();
+                        targetIndex = Math.min(maxIndex, currentIndex + 1);
+                        break;
+                    case "ArrowUp":
+                    case "PageUp":
+                        e.preventDefault();
+                        targetIndex = Math.max(0, currentIndex - 1);
+                        break;
+                    case "Home":
+                        e.preventDefault();
+                        targetIndex = 0;
+                        break;
+                    case "End":
+                        e.preventDefault();
+                        targetIndex = maxIndex;
+                        break;
+                    default:
+                        return;
+                }
+
+                if (targetIndex === currentIndex && Math.abs(window.scrollY - currentIndex * vh) < 2) {
+                    return;
+                }
+
+                smoothHomeScrollTo(targetIndex * vh);
+            }, { passive: false });
+
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden && snapAnimating) { 
+                    scrollManager.cancel(); 
+                    snapAnimating = false; 
+                }
+            });
+
+            window.addEventListener("blur", () => {
+                if (snapAnimating) { 
+                    scrollManager.cancel(); 
+                    snapAnimating = false; 
+                }
+            });
+            // ============ 滚动系统结束 ============
+
+            document.addEventListener("mousemove", e => { lastMouseX = e.clientX; lastMouseY = e.clientY; if (!isMobile() && currentPage === "home" && activeHomeSection === 4) { smileCursor.style.left = `${e.clientX}px`; smileCursor.style.top = `${e.clientY}px`; } });
 
             function showDetail(id) { returningHome = false;
                 savedScrollY = activeHomeSection * vh;
@@ -958,17 +1176,13 @@
                 closeAnimationModal();
                 closeTheaterMode(); }
 
-            function goBack(e) { if (e) { e.preventDefault();
-                    e.stopPropagation(); } if (returningHome) return;
+            function goBack(e) { if (e) { e.preventDefault(); e.stopPropagation(); } if (returningHome) return;
                 returningHome = true;
                 setHomeSnapEnabled(false); const returnSection = Math.max(0, Math.min(Math.round((savedScrollY || 0) / vh), homeScreenCount() - 1));
                 closeAnimationModal();
                 closeTheaterMode();
-                document.querySelectorAll(".detail-page video").forEach(v => { v.pause();
-                    v.muted = true;
-                    v.controls = false; });
-                detailPages.forEach(p => { p.classList.remove("active");
-                    p.scrollTop = 0; });
+                document.querySelectorAll(".detail-page video").forEach(v => { v.pause(); v.muted = true; v.controls = false; });
+                detailPages.forEach(p => { p.classList.remove("active"); p.scrollTop = 0; });
                 page1.classList.remove("hidden");
                 currentPage = "home";
                 document.body.classList.remove("detail-scroll-mode", "smile-cursor");
@@ -997,9 +1211,7 @@
                 if (isMobile()) {
                     const firstVideo = page3Videos[0];
                     if (firstVideo) {
-                        if (!firstVideo.src && firstVideo.dataset.src) {
-                            firstVideo.src = firstVideo.dataset.src;
-                        }
+                        if (!firstVideo.src && firstVideo.dataset.src) firstVideo.src = firstVideo.dataset.src;
                         firstVideo.preload = "metadata";
                         firstVideo.muted = true;
                         firstVideo.load();
@@ -1020,67 +1232,34 @@
                 if (nextSection === activeHomeSection) return; const prev = activeHomeSection;
                 activeHomeSection = nextSection;
                 setActive(pageWork, nextSection === 1); if (nextSection === 1) playWorkCards(); else if (prev === 1) resetWorkCards();
-                setActive(page2, nextSection === 2); if (nextSection === 2 && !loopActive) { loopActive = true;
-                    startSlotSpin(); } else if (prev === 2 && loopActive && nextSection !== 2) { loopActive = false;
-                    clearTimers();
-                    yearEl.textContent = FINAL; }
+                setActive(page2, nextSection === 2); if (nextSection === 2 && !loopActive) { loopActive = true; startSlotSpin(); } else if (prev === 2 && loopActive && nextSection !== 2) { loopActive = false; clearTimers(); yearEl.textContent = FINAL; }
                 setActive(page3, nextSection === 3); if (nextSection === 3) { scheduleWarmupDetailAssets(); if (!page3VideosHydrated) { if (isMobile()) setTimeout(hydratePage3Videos, 350); else hydratePage3Videos(); } else page3Videos.forEach(v => { v.muted = true; if (v.paused) v.play().catch(() => {}); }); } else if (prev === 3) { page3Videos.forEach(v => v.pause()); }
-                setActive(page4, nextSection === 4); if (nextSection === 4) { if (!isMobile()) { document.body.classList.add('smile-cursor');
-                        smileCursor.style.left = lastMouseX + 'px';
-                        smileCursor.style.top = lastMouseY + 'px'; }
-                    startTypewriter(); } else if (prev === 4) { document.body.classList.remove('smile-cursor');
-                    stopTypewriter(); }
+                setActive(page4, nextSection === 4); if (nextSection === 4) { if (!isMobile()) { document.body.classList.add('smile-cursor'); smileCursor.style.left = lastMouseX + 'px'; smileCursor.style.top = lastMouseY + 'px'; }
+                    startTypewriter(); } else if (prev === 4) { document.body.classList.remove('smile-cursor'); stopTypewriter(); }
                 
-                // 移动端：同步page1的显示状态
                 if (isMobile()) {
-                    if (nextSection === 0) {
-                        page1.classList.remove("home-away");
-                        page1.style.opacity = "1";
-                        page1.style.transform = "scale(1)";
-                    } else {
-                        page1.classList.add("home-away");
-                        page1.style.opacity = "0";
-                        page1.style.transform = "scale(1)";
-                    }
+                    if (nextSection === 0) { page1.classList.remove("home-away"); page1.style.opacity = "1"; page1.style.transform = "scale(1)"; }
+                    else { page1.classList.add("home-away"); page1.style.opacity = "0"; page1.style.transform = "scale(1)"; }
                 }
             }
 
-            // 移动端触摸滑动切换
             let touchStartY = 0;
             let touchEndY = 0;
             let isTouchMoving = false;
 
-            function handleTouchStart(e) {
-                if (currentPage !== "home" || !isMobile()) return;
-                touchStartY = e.touches[0].clientY;
-                touchEndY = e.touches[0].clientY;
-                isTouchMoving = true;
-            }
-
-            function handleTouchMove(e) {
-                if (!isTouchMoving || currentPage !== "home" || !isMobile()) return;
-                touchEndY = e.touches[0].clientY;
-            }
-
+            function handleTouchStart(e) { if (currentPage !== "home" || !isMobile()) return; touchStartY = e.touches[0].clientY; touchEndY = e.touches[0].clientY; isTouchMoving = true; }
+            function handleTouchMove(e) { if (!isTouchMoving || currentPage !== "home" || !isMobile()) return; touchEndY = e.touches[0].clientY; }
             function handleTouchEnd() {
                 if (!isTouchMoving || currentPage !== "home" || !isMobile()) return;
                 isTouchMoving = false;
-                
                 const diff = touchStartY - touchEndY;
                 const maxIndex = homeScreenCount() - 1;
                 let targetSection = activeHomeSection;
-                
                 if (Math.abs(diff) > 50) {
-                    if (diff > 0 && activeHomeSection < maxIndex) {
-                        targetSection = activeHomeSection + 1;
-                    } else if (diff < 0 && activeHomeSection > 0) {
-                        targetSection = activeHomeSection - 1;
-                    }
+                    if (diff > 0 && activeHomeSection < maxIndex) targetSection = activeHomeSection + 1;
+                    else if (diff < 0 && activeHomeSection > 0) targetSection = activeHomeSection - 1;
                 }
-                
-                if (targetSection !== activeHomeSection) {
-                    syncHomeSection(targetSection);
-                }
+                if (targetSection !== activeHomeSection) syncHomeSection(targetSection);
             }
 
             if (isMobile()) {
@@ -1091,11 +1270,7 @@
 
             function updateScroll() {
                 if (currentPage !== "home") return;
-                
-                if (isMobile()) {
-                    return;
-                }
-                
+                if (isMobile()) return;
                 const sY = window.scrollY;
                 const progress = Math.min(1, Math.max(0, sY / vh));
                 page1.style.transform = `scale(${1 - progress * 0.3})`;
@@ -1119,25 +1294,13 @@
             window.addEventListener("resize", handleViewportResize);
             window.addEventListener("scroll", () => {
                 if (currentPage !== "home") return;
-                
-                if (isMobile()) {
-                    return;
-                }
-                
-                if (!ticking) {
-                    requestAnimationFrame(() => {
-                        updateScroll();
-                        ticking = false;
-                    });
-                    ticking = true;
-                }
+                if (isMobile()) return;
+                if (!ticking) { requestAnimationFrame(() => { updateScroll(); ticking = false; }); ticking = true; }
             }, { passive: true });
             if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
             window.scrollTo(0, 0);
             document.body.style.overflow = "hidden";
-            if (isMobile()) {
-                syncHomeSection(0);
-            }
+            if (isMobile()) { syncHomeSection(0); }
             setProgress(5);
             const forceFinishTimeout = isMobile() ? 3500 : 6000;
             setTimeout(() => { if (!complete) finishLoading(); }, forceFinishTimeout);
@@ -1150,35 +1313,13 @@
 
     <script>
         (function() {
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                return false;
-            });
-
-            document.addEventListener('dragstart', function(e) {
-                if (e.target.tagName === 'IMG') {
-                    e.preventDefault();
-                    return false;
-                }
-            });
-
+            document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
+            document.addEventListener('dragstart', function(e) { if (e.target.tagName === 'IMG') { e.preventDefault(); return false; } });
             document.addEventListener('keydown', function(e) {
-                if (e.key === 'F12' || e.keyCode === 123) {
-                    e.preventDefault();
-                    return false;
-                }
-                if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
-                    e.preventDefault();
-                    return false;
-                }
-                if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
-                    e.preventDefault();
-                    return false;
-                }
-                if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
-                    e.preventDefault();
-                    return false;
-                }
+                if (e.key === 'F12' || e.keyCode === 123) { e.preventDefault(); return false; }
+                if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) { e.preventDefault(); return false; }
+                if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) { e.preventDefault(); return false; }
+                if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) { e.preventDefault(); return false; }
             });
         })();
     </script>
@@ -1186,25 +1327,15 @@
     <script>
         (function(){
             let ticking = false;
-            const onScroll = () => {
-                if(!ticking){
-                    requestAnimationFrame(()=>{ ticking=false; });
-                    ticking = true;
-                }
-            };
+            const onScroll = () => { if(!ticking){ requestAnimationFrame(()=>{ ticking=false; }); ticking = true; } };
             window.addEventListener('scroll', onScroll, {passive:true});
-
             const videos = document.querySelectorAll('video');
             if('IntersectionObserver' in window){
                 const io = new IntersectionObserver((entries)=>{
                     entries.forEach(e=>{
                         const v = e.target;
-                        if(e.isIntersecting){
-                            if(!v.src && v.dataset.src) v.src = v.dataset.src;
-                            v.play().catch(()=>{});
-                        }else{
-                            v.pause();
-                        }
+                        if(e.isIntersecting){ if(!v.src && v.dataset.src) v.src = v.dataset.src; v.play().catch(()=>{}); }
+                        else { v.pause(); }
                     });
                 },{threshold:0.35});
                 videos.forEach(v=>io.observe(v));
