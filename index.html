@@ -778,7 +778,7 @@
                     "https://img.alicdn.com/imgextra/i1/3952997314/O1CN01d6h3QS4zUqJ1bRyA_!!3952997314.webp",
                     "https://img.alicdn.com/imgextra/i1/3952997314/O1CN01d6h3QS4zUqJ1bRyA_!!3952997314.webp"
                 ];
-                const detail1TailImage = "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01HTrYWz1ueZL3thAe_!!3952997314.webp";
+                const detail1TailImage = "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01sSewT09ep5J3thAe_!!3952997314.webp";
                 const displayImages = id === "detail1" ? [...detail1TopRow, ...images, detail1TailImage] : images;
                 return `<div class="cards-grid">${displayImages.map((src, i) => `<div class="card-box${id === "detail1" && i === displayImages.length - 1 ? " card-box-wide" : ""}">${imageTag(src, i, `作品${i + 1}`)}</div>`).join("")}</div>`;
             }
