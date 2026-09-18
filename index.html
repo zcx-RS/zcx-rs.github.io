@@ -595,6 +595,13 @@
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
 
+            // ===== detail1 第三排图片（替换这三个链接即可）=====
+            const detail1ThirdRow = [
+                "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp"
+            ];
+
             let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, activeHomeSection = 0, page3VideosHydrated = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
 
@@ -759,10 +766,21 @@
 
             function allDetailImageSources() { return [...detailImageSources("detail1"), ...detailImageSources("detail2"), ...detailImageSources("detail3")]; }
 
-            function preloadAllMediaAggressively() { preloadImagesSequential(allDetailImageSources()); if (!isMobile()) { page3Videos.forEach(v => { const src = v.currentSrc || v.src; if (src) preloadVideo(src); }); animationVideos.forEach(preloadVideo); } }
+            function preloadAllMediaAggressively() {
+                preloadImagesSequential(allDetailImageSources());
+                preloadImagesSequential(detail1ThirdRow);
+                if (!isMobile()) {
+                    page3Videos.forEach(v => { const src = v.currentSrc || v.src; if (src) preloadVideo(src); });
+                    animationVideos.forEach(preloadVideo);
+                }
+            }
 
-            function preloadDetailAssets(id) { const sources = detailImageSources(id);
-                preloadImagesSequential(sources); if (id === "detail4" && !isMobile()) animationVideos.forEach(preloadVideo); }
+            function preloadDetailAssets(id) {
+                const sources = detailImageSources(id);
+                preloadImagesSequential(sources);
+                if (id === "detail1") preloadImagesSequential(detail1ThirdRow);
+                if (id === "detail4" && !isMobile()) animationVideos.forEach(preloadVideo);
+            }
 
             function scheduleWarmupDetailAssets() { if (warmupStarted) return;
                 warmupStarted = true;
@@ -772,6 +790,7 @@
 
             function imageTag(src, index, alt) { const url = escapeHtml(originalImageUrl(src)); const altText = escapeHtml(alt); return `<img src="${url}" data-original-src="${url}" alt="${altText}" decoding="async" fetchpriority="high">`; }
 
+            // ===== 生成 detail1 / detail2 画廊，detail1 第 1、2、3 排都是图片 =====
             function galleryMarkup(id, images) {
                 const detail1TopRow = [
                     "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
@@ -784,15 +803,45 @@
                     "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01ckztLtE8sBG1bRyA_!!3952997314.webp"
                 ];
                 const detail1TailImage = "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01WjvIedDg8MK3thAe_!!3952997314.webp";
-                const displayImages = id === "detail1" ? [...detail1TopRow, ...detail1SecondRow, ...images, detail1TailImage] : images;
-                return `<div class="cards-grid">${displayImages.map((src, i) => `<div class="card-box${id === "detail1" && i === displayImages.length - 1 ? " card-box-wide" : ""}">${imageTag(src, i, `作品${i + 1}`)}</div>`).join("")}</div>`;
+
+                if (id === "detail1") {
+                    const items = [
+                        ...detail1TopRow,
+                        ...detail1SecondRow,
+                        ...detail1ThirdRow,
+                        ...images,
+                        detail1TailImage
+                    ];
+                    const inner = items.map((src, i) => {
+                        const wide = i === items.length - 1 ? " card-box-wide" : "";
+                        return `<div class="card-box${wide}">${imageTag(src, i, `作品${i + 1}`)}</div>`;
+                    }).join("");
+                    return `<div class="cards-grid">${inner}</div>`;
+                }
+                return `<div class="cards-grid">${images.map((src, i) => `<div class="card-box">${imageTag(src, i, `作品${i + 1}`)}</div>`).join("")}</div>`;
             }
 
-            function renderDetail(id) { const page = document.getElementById(id); const content = page.querySelector(".detail-content"); if (content.dataset.rendered === "true") return; if (id === "detail1" || id === "detail2") { content.innerHTML = galleryMarkup(id, galleryImages[id]); } if (id === "detail3") { content.innerHTML = `<div class="ai-layout"><div class="ai-top-container">${imageTag(aiImages.top, 0, "AI作品")}</div><div class="ai-bottom-row">${aiImages.bottom.map((src, i) => `<div class="ai-bottom-box">${imageTag(src, i + 1, `AI案例${i + 1}`)}</div>`).join("")}</div></div>`; } if (id === "detail4") { content.innerHTML = `<div class="animation-video-layout">${animationVideos.map((src, i) => `<div class="animation-video-card" role="button" tabindex="0" data-video-src="${escapeHtml(src)}" aria-label="查看动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="0.12"></video></div>`).join("")}</div>`;
-                    bindAnimationCards(content); }
-                content.querySelectorAll("img").forEach(img => { if (img.complete && img.naturalWidth > 0) markImageLoaded(img); else { img.addEventListener("load", () => markImageLoaded(img), { once: true });
-                        img.addEventListener("error", () => markImageLoaded(img), { once: true }); } });
-                content.dataset.rendered = "true"; }
+            function renderDetail(id) {
+                const page = document.getElementById(id);
+                const content = page.querySelector(".detail-content");
+                if (content.dataset.rendered === "true") return;
+                if (id === "detail1" || id === "detail2") {
+                    content.innerHTML = galleryMarkup(id, galleryImages[id]);
+                }
+                if (id === "detail3") { content.innerHTML = `<div class="ai-layout"><div class="ai-top-container">${imageTag(aiImages.top, 0, "AI作品")}</div><div class="ai-bottom-row">${aiImages.bottom.map((src, i) => `<div class="ai-bottom-box">${imageTag(src, i + 1, `AI案例${i + 1}`)}</div>`).join("")}</div></div>`; }
+                if (id === "detail4") {
+                    content.innerHTML = `<div class="animation-video-layout">${animationVideos.map((src, i) => `<div class="animation-video-card" role="button" tabindex="0" data-video-src="${escapeHtml(src)}" aria-label="查看动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="0.12"></video></div>`).join("")}</div>`;
+                    bindAnimationCards(content);
+                }
+                content.querySelectorAll("img").forEach(img => {
+                    if (img.complete && img.naturalWidth > 0) markImageLoaded(img);
+                    else {
+                        img.addEventListener("load", () => markImageLoaded(img), { once: true });
+                        img.addEventListener("error", () => markImageLoaded(img), { once: true });
+                    }
+                });
+                content.dataset.rendered = "true";
+            }
 
             function hydrateDetailImages(page) { page.querySelectorAll("img[src]").forEach(img => { if (img.complete && img.naturalWidth > 0) markImageLoaded(img); }); }
 
@@ -982,7 +1031,6 @@
                     return t < 0.5 ? Math.pow(2, 20 * t - 10) / 2 : (2 - Math.pow(2, -20 * t + 10)) / 2;
                 },
                 easeInOutCubic: t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
-                // 主要缓动函数 - 五次方缓动，最平滑
                 easeInOutQuint: t => t < 0.5 ? 16 * t * t * t * t * t : 1 - Math.pow(-2 * t + 2, 5) / 2,
                 easeInOutQuart: t => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2,
                 smoothStep: t => t * t * t * (t * (t * 6 - 15) + 10)
@@ -1049,7 +1097,6 @@
                     const targetIndex = Math.round(targetY / vh);
                     const isBoundary = this.isAtBoundary(targetIndex);
                     
-                    // 使用 easeInOutQuint 缓动
                     const selectedEasing = easing || EasingFunctions.easeInOutCubic;
                     
                     const startTime = performance.now();
@@ -1059,13 +1106,10 @@
                         const elapsed = now - startTime;
                         const progress = Math.min(1, elapsed / calculatedDuration);
                         
-                        // 应用缓动函数
                         const easedProgress = selectedEasing(progress);
                         
-                        // 计算当前位置
                         const currentY = startY + distance * easedProgress;
                         
-                        // 使用平滑滚动
                         window.scrollTo({
                             top: currentY,
                             behavior: 'auto'
@@ -1164,8 +1208,6 @@
             window.addEventListener("wheel", e => {
                 if (currentPage !== "home" || Math.abs(e.deltaY) < 6 || e.ctrlKey) return;
 
-                // 响应式预览和带鼠标/触控板的移动设备没有真实 touch 事件，
-                // 在移动断点下将滚轮映射为逐屏导航。
                 if (isMobile()) {
                     e.preventDefault();
                     if (mobileWheelLocked) return;
@@ -1193,7 +1235,6 @@
                 smoothHomeScrollTo(targetIndex * vh);
             }, { passive: false });
 
-            // 键盘导航
             document.addEventListener("keydown", e => {
                 if (currentPage !== "home" || isMobile() || !desktopSnapQuery.matches) return;
                 
@@ -1393,7 +1434,6 @@
                 if (targetSection !== activeHomeSection) syncHomeSection(targetSection);
             }
 
-            // 始终注册，是否处理由当前媒体查询实时判断，支持浏览器运行中切换响应式尺寸。
             document.addEventListener("touchstart", handleTouchStart, { passive: true });
             document.addEventListener("touchmove", handleTouchMove, { passive: true });
             document.addEventListener("touchend", handleTouchEnd, { passive: true });
@@ -1401,7 +1441,6 @@
                 if (performance.now() < suppressHomeClickUntil && e.target.closest('.minimal-card,.page4')) { e.preventDefault(); e.stopImmediatePropagation(); }
             }, true);
 
-            // 浏览器设备预览有时不会把鼠标拖动模拟成 touch，单独支持 mouse/pen pointer。
             let pointerStartY = 0;
             let pointerStartX = 0;
             let pointerEndY = 0;
