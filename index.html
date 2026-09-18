@@ -384,7 +384,6 @@
     </style>
 </head>
 <body>
-    <!-- 页面内容保持不变 -->
     <div id="loading-overlay">
         <div class="frame"><svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><g id="load-group"><path id="load-path" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" opacity="0.25"></path></g></svg></div>
         <div class="load-meta"><div class="load-title">Heart Wave</div><div class="load-tag">f(x) Heart Wave · 加载中</div><div class="load-progress-wrap"><div class="load-progress-bar"><div class="load-progress-fill" id="loadProgressFill"></div></div><span class="load-progress-text" id="loadProgressText">0%</span></div></div>
@@ -448,7 +447,7 @@
     </div>
 
     <script>
-        // Logo 无限滚动：仅保留两个完全相同的组，并按实测组宽无缝衔接。
+        // Logo 无限滚动
         (function initLogoScroll() {
             const track = document.getElementById('logoScrollTrack');
             const iconList = [
@@ -595,12 +594,23 @@
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
 
-            // ===== detail1 第三排图片（替换这三个链接即可）=====
+            // ===== detail1 前三排图片常量（顺序：第一排 → 第二排 → 第三排）=====
+            const detail1TopRow = [
+                "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01OdUczlwDVIC1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ksC0v3vzoPI1bRyA_!!3952997314.webp"
+            ];
+            const detail1SecondRow = [
+                "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01mjb7Sq2r6CC1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01WFAFWO23trxqfKeJh_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01ckztLtE8sBG1bRyA_!!3952997314.webp"
+            ];
             const detail1ThirdRow = [
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01aX0GhIeSX9E1bRyA_!!3952997314.webp"
             ];
+            const detail1TailImage = "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01WjvIedDg8MK3thAe_!!3952997314.webp";
 
             let currentPage = "home", savedScrollY = 0, vh = window.innerHeight, ticking = false, lastMouseX = window.innerWidth / 2, lastMouseY = window.innerHeight / 2, returningHome = false, complete = false, warmupStarted = false, snapAnimating = false, activeHomeSection = 0, page3VideosHydrated = false;
             const page3Videos = Array.from(page3.querySelectorAll("video"));
@@ -745,7 +755,21 @@
 
             function requestIdleTask(callback, timeout = 1200) { if ("requestIdleCallback" in window) window.requestIdleCallback(callback, { timeout }); else setTimeout(callback, isMobile() ? 300 : 500); }
 
-            function detailImageSources(id) { if (id === "detail1" || id === "detail2") return (galleryImages[id] || []).map(originalImageUrl); if (id === "detail3") return [aiImages.top, ...aiImages.bottom].map(originalImageUrl); return []; }
+            // 返回 detail 页完整有序图片列表（detail1：第一排 → 第二排 → 第三排 → 其余 → 尾部）
+            function detailImageSources(id) {
+                if (id === "detail1") {
+                    return [
+                        ...detail1TopRow,
+                        ...detail1SecondRow,
+                        ...detail1ThirdRow,
+                        ...(galleryImages.detail1 || []),
+                        detail1TailImage
+                    ].map(originalImageUrl);
+                }
+                if (id === "detail2") return (galleryImages.detail2 || []).map(originalImageUrl);
+                if (id === "detail3") return [aiImages.top, ...aiImages.bottom].map(originalImageUrl);
+                return [];
+            }
 
             function preloadImage(src) { if (!src || preloadedImages.has(src)) return Promise.resolve();
                 preloadedImages.add(src); return new Promise(resolve => { const image = new Image();
@@ -764,11 +788,11 @@
                 video.src = src;
                 video.load(); }
 
-            function allDetailImageSources() { return [...detailImageSources("detail1"), ...detailImageSources("detail2"), ...detailImageSources("detail3")]; }
-
             function preloadAllMediaAggressively() {
-                preloadImagesSequential(allDetailImageSources());
-                preloadImagesSequential(detail1ThirdRow);
+                // 严格按前排优先顺序预加载
+                preloadImagesSequential(detailImageSources("detail1"));
+                preloadImagesSequential(detailImageSources("detail2"));
+                preloadImagesSequential(detailImageSources("detail3"));
                 if (!isMobile()) {
                     page3Videos.forEach(v => { const src = v.currentSrc || v.src; if (src) preloadVideo(src); });
                     animationVideos.forEach(preloadVideo);
@@ -776,9 +800,7 @@
             }
 
             function preloadDetailAssets(id) {
-                const sources = detailImageSources(id);
-                preloadImagesSequential(sources);
-                if (id === "detail1") preloadImagesSequential(detail1ThirdRow);
+                preloadImagesSequential(detailImageSources(id));
                 if (id === "detail4" && !isMobile()) animationVideos.forEach(preloadVideo);
             }
 
@@ -790,20 +812,8 @@
 
             function imageTag(src, index, alt) { const url = escapeHtml(originalImageUrl(src)); const altText = escapeHtml(alt); return `<img src="${url}" data-original-src="${url}" alt="${altText}" decoding="async" fetchpriority="high">`; }
 
-            // ===== 生成 detail1 / detail2 画廊，detail1 第 1、2、3 排都是图片 =====
+            // detail1 前三排图片 + 后续图片 + 尾部大图
             function galleryMarkup(id, images) {
-                const detail1TopRow = [
-                    "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
-                    "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01OdUczlwDVIC1bRyA_!!3952997314.webp",
-                    "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ksC0v3vzoPI1bRyA_!!3952997314.webp"
-                ];
-                const detail1SecondRow = [
-                    "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01mjb7Sq2r6CC1bRyA_!!3952997314.webp",
-                    "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01WFAFWO23trxqfKeJh_!!3952997314.webp",
-                    "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01ckztLtE8sBG1bRyA_!!3952997314.webp"
-                ];
-                const detail1TailImage = "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01WjvIedDg8MK3thAe_!!3952997314.webp";
-
                 if (id === "detail1") {
                     const items = [
                         ...detail1TopRow,
