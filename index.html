@@ -246,6 +246,277 @@
         .animation-modal-close:hover{background:rgba(255,140,66,0.8);transform:scale(1.06);}
         .animation-modal-close svg{width:24px;height:24px;}
 
+        /* ═══════════════════════════════════════════════════════════
+           联系方式 · FolderFloat 文件夹浮层
+           ═══════════════════════════════════════════════════════════ */
+        #detail-contact{
+            align-items:center;
+            justify-content:center;
+            padding:6vh 2vw calc(80px + 6vh);
+        }
+        #detail-contact .detail-content{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            gap:clamp(18px,4.5vh,46px);
+            width:100%;
+        }
+        .contact-hint{
+            font-size:clamp(11px,1.05vw,15px);
+            letter-spacing:0.06em;
+            color:#57534e;
+            opacity:0.62;
+            pointer-events:none;
+            text-align:center;
+            user-select:none;
+        }
+
+        .folder-float{
+            position:relative;
+            width:var(--ff-w,200px);
+            height:var(--ff-h,148px);
+            -webkit-tap-highlight-color:transparent;
+            user-select:none;
+            -webkit-user-select:none;
+            isolation:isolate;
+        }
+
+        .folder-float__items{
+            position:absolute;
+            left:50%;
+            top:calc(var(--ff-h,148px) * 0.44);
+            width:0;
+            height:0;
+            z-index:3;
+        }
+
+        .folder-float__item{
+            position:absolute;
+            left:0;
+            top:0;
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            padding:calc(9px * var(--ff-scale,1)) calc(16px * var(--ff-scale,1));
+            border:0;
+            border-radius:999px;
+            background:var(--ff-item,#fafaf9);
+            color:var(--ff-item-ink,#1c1917);
+            font:inherit;
+            font-size:calc(13px * var(--ff-scale,1));
+            font-weight:500;
+            letter-spacing:-0.01em;
+            line-height:1.25;
+            white-space:nowrap;
+            cursor:pointer;
+            touch-action:manipulation;
+            pointer-events:none;
+            opacity:0;
+            transform:translate3d(-50%,0,0) scale(0.4) rotate(0deg);
+            transform-origin:50% 50%;
+            will-change:transform,opacity;
+            box-shadow:
+                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
+                0 calc(6px * var(--ff-scale,1)) calc(14px * var(--ff-scale,1))
+                  calc(-6px * var(--ff-scale,1)) rgba(0,0,0,0.28);
+            transition:
+                transform var(--ff-close,240ms) var(--ff-close-ease,ease)
+                  calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),
+                opacity calc(var(--ff-close,240ms) * 0.8) ease
+                  calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),
+                color 240ms ease,
+                box-shadow 200ms ease;
+        }
+
+        .folder-float[data-open] .folder-float__item{
+            opacity:1;
+            pointer-events:auto;
+            transform:translate3d(
+                calc(-50% + var(--x,0px)),
+                var(--y,0px),
+                0
+            ) rotate(var(--r,0deg)) scale(1);
+            transition:
+                transform var(--ff-open,540ms) var(--ff-open-ease,ease)
+                  calc(var(--i,0) * var(--ff-stagger,34ms)),
+                opacity calc(var(--ff-open,540ms) * 0.55) ease
+                  calc(var(--i,0) * var(--ff-stagger,34ms)),
+                color 240ms ease,
+                box-shadow 200ms ease;
+        }
+
+        /* 复制成功：白底 + 橙字 */
+        .folder-float__item[data-copied="ok"]{
+            background:var(--ff-item,#fafaf9);
+            color:rgb(255,140,66);
+        }
+
+        /* 复制失败：白底 + 红字 */
+        .folder-float__item[data-copied="fail"]{
+            background:var(--ff-item,#fafaf9);
+            color:#dc2626;
+        }
+
+        .folder-float[data-live] .folder-float__item{
+            transition:box-shadow 200ms ease;
+        }
+
+        @media (hover: hover){
+            .folder-float__item:hover{
+                box-shadow:
+                    inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
+                    0 calc(14px * var(--ff-scale,1)) calc(26px * var(--ff-scale,1))
+                      calc(-10px * var(--ff-scale,1)) rgba(0,0,0,0.42);
+            }
+        }
+
+        .folder-float__item:focus-visible{
+            outline:2px solid #78716c;
+            outline-offset:3px;
+        }
+
+        .folder-float__item:active{
+            transform:translate3d(
+                calc(-50% + var(--x,0px)),
+                var(--y,0px),
+                0
+            ) rotate(var(--r,0deg)) scale(0.96);
+        }
+
+        .folder-float__drift{
+            display:block;
+            pointer-events:none;
+        }
+
+        .folder-float__item[data-pop] .folder-float__drift{
+            animation:ff-pop 380ms cubic-bezier(0.34,1.3,0.5,1);
+        }
+
+        @keyframes ff-pop{
+            0%   { transform:scale(1)    rotate(0deg); }
+            32%  { transform:scale(1.18) rotate(-1.6deg); }
+            62%  { transform:scale(0.955) rotate(0.9deg); }
+            82%  { transform:scale(1.03) rotate(-0.4deg); }
+            100% { transform:scale(1)    rotate(0deg); }
+        }
+
+        .folder-float__folder{
+            position:absolute;
+            inset:0;
+            z-index:2;
+            perspective:calc(1100px * var(--ff-scale,1));
+            perspective-origin:50% 30%;
+        }
+
+        .folder-float__back{
+            position:absolute;
+            left:0;
+            right:0;
+            top:calc(var(--ff-h,148px) * 0.3);
+            bottom:0;
+            background:var(--ff-back,#44403c);
+            border-radius:var(--ff-r,14px);
+            box-shadow:0 calc(24px * var(--ff-scale,1)) calc(44px * var(--ff-scale,1))
+                calc(-22px * var(--ff-scale,1)) rgba(0,0,0,0.42);
+        }
+
+        .folder-float__back::before{
+            content:'';
+            position:absolute;
+            left:calc(var(--ff-w,200px) * 0.07);
+            top:calc(-13px * var(--ff-scale,1));
+            width:calc(var(--ff-w,200px) * 0.38);
+            height:calc(14px * var(--ff-scale,1));
+            background:var(--ff-back,#44403c);
+            border-radius:
+                calc(8px * var(--ff-scale,1))
+                calc(12px * var(--ff-scale,1)) 0 0;
+        }
+
+        .folder-float__paper{
+            position:absolute;
+            left:calc(11px * var(--ff-scale,1));
+            right:calc(11px * var(--ff-scale,1));
+            top:calc(var(--ff-h,148px) * 0.26);
+            bottom:calc(12px * var(--ff-scale,1));
+            background:var(--ff-paper,#e7e5e4);
+            border-radius:calc(10px * var(--ff-scale,1));
+            transform-origin:50% 100%;
+            transform:translateY(calc(10px * var(--ff-scale,1))) scale(0.94);
+            transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease) 30ms;
+            box-shadow:0 calc(-3px * var(--ff-scale,1)) calc(10px * var(--ff-scale,1))
+                rgba(0,0,0,0.1);
+        }
+
+        .folder-float[data-open] .folder-float__paper{
+            transform:translateY(calc(-2px * var(--ff-scale,1))) scale(1);
+            transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 20ms;
+        }
+
+        .folder-float__front{
+            position:absolute;
+            left:0;
+            right:0;
+            top:calc(var(--ff-h,148px) * 0.46);
+            bottom:0;
+            display:flex;
+            flex-direction:column;
+            align-items:flex-start;
+            justify-content:center;
+            gap:calc(2px * var(--ff-scale,1));
+            padding:calc(12px * var(--ff-scale,1)) calc(18px * var(--ff-scale,1));
+            background:var(--ff-front,#57534e);
+            border-radius:var(--ff-r,14px);
+            transform-origin:50% 100%;
+            transform:rotateX(calc(var(--ff-rest,16deg) * -1));
+            transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease);
+            box-shadow:
+                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.14),
+                0 calc(16px * var(--ff-scale,1)) calc(28px * var(--ff-scale,1))
+                  calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.38);
+        }
+
+        .folder-float[data-open] .folder-float__front{
+            transform:rotateX(calc(var(--ff-angle,34deg) * -1));
+            transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 60ms;
+        }
+
+        .folder-float__label{
+            font-size:calc(13px * var(--ff-scale,1));
+            font-weight:600;
+            line-height:1.2;
+            letter-spacing:-0.01em;
+            color:var(--ff-label,#fafaf9);
+        }
+
+        .folder-float__sub{
+            font-size:calc(11px * var(--ff-scale,1));
+            font-weight:500;
+            line-height:1.2;
+            color:var(--ff-label,#fafaf9);
+            opacity:0.55;
+        }
+
+        .folder-float__trigger{
+            position:absolute;
+            inset:0;
+            z-index:5;
+            margin:0;
+            padding:0;
+            border:0;
+            border-radius:var(--ff-r,14px);
+            background:transparent;
+            cursor:pointer;
+            appearance:none;
+            -webkit-appearance:none;
+        }
+
+        .folder-float__trigger:focus-visible{
+            outline:2px solid #78716c;
+            outline-offset:3px;
+        }
+
         @media(max-width:1024px){.cards-grid{grid-template-columns:repeat(2,1fr);}.cards-row{grid-template-columns:repeat(2,1fr);}}
         @media (min-width:769px) and (max-width:1100px){
             .page-work .work-container{padding:2vh 18px;}
@@ -374,12 +645,90 @@
             .page4{padding-bottom:env(safe-area-inset-bottom);}
             .animation-video-card::before{width:clamp(44px,10vw,56px);height:clamp(44px,10vw,56px);}
             .animation-video-card::after{border-top-width:clamp(9px,2vw,11px);border-bottom-width:clamp(9px,2vw,11px);border-left-width:clamp(14px,3vw,17px);}
+            #detail-contact{padding:calc(60px + 2vh) 16px calc(20px + 4vh);justify-content:center;}
+        }
+
+        /* ═══════════════════════════════════════════════════════════
+           联系方式页 · 左上角胶囊返回按钮
+           ═══════════════════════════════════════════════════════════ */
+        #detail-contact .back-btn--ghost{
+            position:fixed;
+            top:clamp(14px,2.4vh,26px);
+            left:clamp(14px,2.4vw,26px);
+            right:auto;
+            bottom:auto;
+            width:auto;
+            height:auto;
+            padding:9px 16px 9px 13px;
+            gap:8px;
+            font-size:13px;
+            font-weight:500;
+            letter-spacing:0.01em;
+            text-transform:none;
+            color:#fafaf9;
+            background:rgba(68,64,60,0.82);
+            backdrop-filter:blur(10px) saturate(1.25);
+            -webkit-backdrop-filter:blur(10px) saturate(1.25);
+            border:none;
+            border-top:none;
+            border-radius:999px;
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.16),
+                0 8px 20px -10px rgba(0,0,0,0.5);
+            transition:
+                background 220ms ease,
+                transform 260ms cubic-bezier(0.34,1.2,0.5,1),
+                box-shadow 260ms ease;
+            animation:contact-back-in 460ms 160ms cubic-bezier(0.22,1,0.36,1) backwards;
+        }
+
+        #detail-contact .back-btn--ghost .back-btn-content{gap:8px;}
+
+        #detail-contact .back-btn--ghost .back-arrow{
+            width:14px;
+            height:14px;
+            padding:0;
+            border-radius:0;
+            background:transparent;
+            color:currentColor;
+            box-shadow:none;
+            transition:transform 260ms cubic-bezier(0.34,1.2,0.5,1);
+        }
+
+        #detail-contact .back-btn--ghost:hover{
+            color:#fafaf9;
+            background:rgba(41,37,36,0.94);
+            letter-spacing:0.01em;
+            transform:none;
+            box-shadow:
+                inset 0 1px 0 rgba(255,255,255,0.2),
+                0 12px 26px -12px rgba(0,0,0,0.62);
+        }
+
+        #detail-contact .back-btn--ghost:hover .back-arrow{
+            transform:translateX(-2px);
+            box-shadow:none;
+        }
+
+        #detail-contact .back-btn--ghost:active{transform:scale(0.96);}
+
+        @keyframes contact-back-in{
+            from{opacity:0;transform:translate(-10px,0);}
+            to  {opacity:1;transform:translate(0,0);}
+        }
+
+        @media(max-width:600px){
+            #detail-contact .back-btn--ghost{padding:10px;}
+            #detail-contact .back-btn--ghost .back-btn-text{display:none;}
         }
 
         @media(prefers-reduced-motion:reduce){
             html.home-scroll-snap{scroll-behavior:auto;}
             .minimal-card::before,#loading-overlay .load-dots span{animation-duration:1ms!important;animation-iteration-count:1!important;}
             .page1,.page-work,.page2,.page3,.page4,.detail-page{transition-duration:0.01ms!important;}
+            .folder-float__item,.folder-float__paper,.folder-float__front{transition-duration:1ms!important;transition-delay:0ms!important;}
+            .folder-float__item[data-pop] .folder-float__drift{animation:none;}
+            #detail-contact .back-btn--ghost{animation:none;}
         }
     </style>
 </head>
@@ -395,7 +744,7 @@
     <div class="scroll-snap-track"><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div><div class="snap-section"></div></div>
 
     <div class="page1" id="page1">
-        <header><nav class="nav-links"><a href="#" id="homeLink">首页</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
+        <header><nav class="nav-links"><a href="#" id="contactLink">联系方式</a><a href="#" id="aboutLink">关于</a><a href="#" id="workLink">工作</a></nav></header>
         <main>
             <div class="hero-title" id="titleMove">
                 <span>周成鑫</span>
@@ -444,6 +793,41 @@
         <div class="detail-content"></div>
         <div class="animation-video-modal" id="animationVideoModal" aria-hidden="true"><button class="animation-modal-close" type="button" aria-label="关闭视频"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2"></path></svg></button><video id="animationModalVideo" controls playsinline preload="metadata"></video></div>
         <button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button>
+    </div>
+
+    <!-- ══════════ 二级页：联系方式 ══════════ -->
+    <div class="detail-page" id="detail-contact">
+        <div class="detail-content">
+            <div class="folder-float" id="contactFolder">
+                <div class="folder-float__items" id="contactItems"></div>
+                <div class="folder-float__folder">
+                    <span class="folder-float__back" aria-hidden="true"></span>
+                    <span class="folder-float__paper" aria-hidden="true"></span>
+                    <span class="folder-float__front" aria-hidden="true">
+                        <span class="folder-float__label">周成鑫</span>
+                        <span class="folder-float__sub">3D渲染师</span>
+                    </span>
+                    <button
+                        type="button"
+                        class="folder-float__trigger"
+                        id="contactTrigger"
+                        aria-expanded="false"
+                        aria-controls="contactItems"
+                        aria-label="周成鑫, 3D渲染师 —— 展开联系方式"
+                    ></button>
+                </div>
+            </div>
+            <p class="contact-hint">悬停打开 · 点击便签复制</p>
+        </div>
+        <button class="back-btn back-btn--ghost" type="button" aria-label="回到首页">
+            <span class="back-btn-content">
+                <svg class="back-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M9.75 3.5 5 8l4.75 4.5" stroke="currentColor" stroke-width="1.8"
+                          stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="back-btn-text">回到首页</span>
+            </span>
+        </button>
     </div>
 
     <script>
@@ -974,7 +1358,7 @@
 
             function playWorkCards() { resetWorkCards();
                 alignWorkYears();
-                const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+                const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
                 workCards.forEach((card, i) => { const duration = reducedMotion ? 1 : (isMobile() ? 410 : 480); const delay = reducedMotion ? 0 : (20 + i * 95); const offsetY = 20 + i * 4; const frames = reducedMotion ? [{ opacity: 0 }, { opacity: 1 }] : [
                         { opacity: 0, filter: "blur(3px)", transform: `translateY(-${offsetY}px) rotateX(-360deg) scale(0.985)`, offset: 0, easing: "cubic-bezier(0.3,0,0.7,1)" },
                         { opacity: 0.88, filter: "blur(0.8px)", transform: `translateY(-${Math.round(offsetY * 0.28)}px) rotateX(-78deg) scale(0.995)`, offset: 0.56, easing: "cubic-bezier(0.16,1,0.3,1)" },
@@ -1211,7 +1595,11 @@
                 }
             }
 
-            document.getElementById("homeLink").addEventListener("click", e => { e.preventDefault(); navigateTo(0); });
+            /* ── 导航：联系方式（二级页）── */
+            document.getElementById("contactLink").addEventListener("click", e => {
+                e.preventDefault();
+                showDetail("detail-contact");
+            });
             document.getElementById("aboutLink").addEventListener("click", e => { e.preventDefault(); navigateTo(1 * vh); });
             document.getElementById("workLink").addEventListener("click", e => { e.preventDefault(); navigateTo(3 * vh); });
 
@@ -1532,6 +1920,731 @@
                 if (currentPage === "home" && activeHomeSection === 4) navigateTo(0);
             });
         })();
+    </script>
+
+    <!-- ══════════ 联系方式 · FolderFloat 交互脚本 ══════════ -->
+    <script>
+    (function () {
+      'use strict';
+
+      var folderEl  = document.getElementById('contactFolder');
+      if (!folderEl) return;
+      var itemsEl   = document.getElementById('contactItems');
+      var triggerEl = document.getElementById('contactTrigger');
+
+      /* ── 配置 ── */
+      var PROFILE = {
+        label: '周成鑫',
+        sublabel: '3D渲染师',
+        items: [
+          { label: '🎬  视觉渲染组',            value: '视觉渲染组' },
+          { label: '📮  2077821405@qq.com',    value: '2077821405@qq.com' },
+          { label: '📱  132 2640 8301',        value: '13226408301' },
+          { label: '🎨  实时渲染 · AI辅助',      value: '实时渲染 · AI辅助' },
+          { label: '📍  义乌 · 可远程协作',      value: '义乌 · 可远程协作' },
+          { label: '🔗  zcx-rs.github.io',      value: 'https://zcx-rs.github.io/' }
+        ]
+      };
+
+      /* ── 常量 ── */
+      var W0 = 200, H0 = 148;
+      var SPREAD0 = 180, LIFT0 = 26, TILT0 = 8;
+      var ROW0 = 52, GAP0 = 12, PAD0 = 28, CHAR0 = 6.8;
+
+      var OPEN_DURATION = 540;
+      var STAGGER = 34;
+      var STAGGER_CLOSE = 20;
+      var CLOSE_DURATION = 240;
+      var ZONE_PAD = 8;
+
+      var DRIFT = 0.5;
+
+      var PARALLAX_BASE = 4.5;
+      var DEPTH_MIN = 0.45;
+      var DEPTH_MAX = 1.85;
+      var PARALLAX_EASE = 0.16;
+
+      var COPY_FEEDBACK_MS = 1000;
+
+      var REDUCED = window.matchMedia
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false;
+
+      /* ── 状态 ── */
+      var state = {
+        scale: 1,
+        open: false,
+        live: false,
+        pills: [],
+        positions: [],
+        zone: null,
+        rafId: 0,
+        liveTimer: 0,
+        popTimer: 0,
+        closeTimer: 0,
+        lastTime: 0,
+        startTime: 0,
+        parallaxX: 0, parallaxY: 0,
+        parallaxTX: 0, parallaxTY: 0
+      };
+
+      /* ── 工具 ── */
+      function jitter(i) {
+        var x = Math.sin(i * 12.9898 + 4.1414) * 43758.5453;
+        return x - Math.floor(x);
+      }
+
+      function computeScale() {
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+        var byW = (vw * 0.85) / 560;
+        var byH = (vh * 0.85) / 314;
+        return Math.max(0.75, Math.min(Math.min(byW, byH), 3.2));
+      }
+
+      function layout(list, spread, lift, tilt, sizes, s) {
+        var PAD = PAD0 * s, CHAR = CHAR0 * s, GAP = GAP0 * s,
+            ROW = ROW0 * s, JIT = 6 * s;
+        var rows = [];
+        var row = [], width = 0;
+
+        list.forEach(function (item, i) {
+          var pw = (sizes[i] && sizes[i].w) || (PAD + item.label.length * CHAR);
+          if (row.length && width + GAP + pw > spread * 2) {
+            rows.push({ items: row, width: width });
+            row = []; width = 0;
+          }
+          row.push({ i: i, pw: pw });
+          width += (row.length > 1 ? GAP : 0) + pw;
+        });
+        if (row.length) rows.push({ items: row, width: width });
+
+        var pos = [];
+        rows.forEach(function (r, ri) {
+          var x = -r.width / 2;
+          var shift = (ri % 2 ? 1 : -1) * Math.min(16 * s, spread * 0.1);
+          r.items.forEach(function (o) {
+            var j = jitter(o.i);
+            pos[o.i] = {
+              x: x + o.pw / 2 + shift + (j - 0.5) * JIT,
+              y: -lift - ri * ROW - j * JIT,
+              r: tilt * (j * 2 - 1)
+            };
+            x += o.pw + GAP;
+          });
+        });
+        return pos;
+      }
+
+      /* ══════════════════════════════════════════════════════════
+         音效
+         ══════════════════════════════════════════════════════════ */
+      var audioCtx = null;
+      var audioMaster = null;
+      var audioBroken = false;
+      var audioUnlocked = false;
+      var unlockBound = false;
+
+      var UNLOCK_EVENTS = [
+        'pointerdown', 'mousedown', 'touchstart', 'touchend',
+        'keydown', 'click', 'wheel', 'scroll'
+      ];
+
+      function initAudio() {
+        if (audioCtx || audioBroken) return audioCtx;
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) { audioBroken = true; return null; }
+        try {
+          audioCtx = new AC();
+        } catch (e) {
+          audioBroken = true;
+          audioCtx = null;
+          return null;
+        }
+        if (audioCtx.state === 'running') audioUnlocked = true;
+        return audioCtx;
+      }
+
+      function ensureMaster() {
+        if (audioMaster || !audioCtx) return audioMaster;
+        try {
+          var g = audioCtx.createGain();
+          g.gain.value = 0.85;
+
+          var f = audioCtx.createBiquadFilter();
+          f.type = 'lowpass';
+          f.frequency.value = 4200;
+          f.Q.value = 0.6;
+
+          g.connect(f);
+          f.connect(audioCtx.destination);
+          audioMaster = g;
+        } catch (e) {
+          audioMaster = null;
+        }
+        return audioMaster;
+      }
+
+      function bindUnlock() {
+        if (unlockBound) return;
+        unlockBound = true;
+        UNLOCK_EVENTS.forEach(function (type) {
+          window.addEventListener(type, unlockAudio, {
+            capture: true, passive: true
+          });
+        });
+      }
+
+      function unbindUnlock() {
+        if (!unlockBound) return;
+        unlockBound = false;
+        UNLOCK_EVENTS.forEach(function (type) {
+          window.removeEventListener(type, unlockAudio, { capture: true });
+        });
+      }
+
+      function primeSilent() {
+        if (!audioCtx) return;
+        try {
+          var buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate || 22050);
+          var src = audioCtx.createBufferSource();
+          src.buffer = buf;
+          src.connect(audioCtx.destination);
+          src.start(0);
+        } catch (e) {}
+      }
+
+      function markUnlocked() {
+        if (audioUnlocked) return;
+        audioUnlocked = true;
+        primeSilent();
+        unbindUnlock();
+      }
+
+      function unlockAudio() {
+        var ctx = initAudio();
+        if (!ctx) return;
+
+        if (ctx.state === 'running') { markUnlocked(); return; }
+
+        var r = ctx.resume();
+        if (r && r.then) {
+          r.then(function () {
+            if (ctx.state === 'running') markUnlocked();
+          }).catch(function () {});
+        }
+      }
+
+      function tone(open) {
+        if (!audioCtx || audioCtx.state !== 'running') return;
+        var out = ensureMaster() || audioCtx.destination;
+        try {
+          var now = audioCtx.currentTime;
+          var osc = audioCtx.createOscillator();
+          var gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.connect(gain);
+          gain.connect(out);
+
+          if (open) {
+            osc.frequency.setValueAtTime(620, now);
+            osc.frequency.exponentialRampToValueAtTime(1180, now + 0.06);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.16, now + 0.012);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.11);
+            osc.start(now); osc.stop(now + 0.12);
+          } else {
+            osc.frequency.setValueAtTime(980, now);
+            osc.frequency.exponentialRampToValueAtTime(420, now + 0.08);
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.11, now + 0.010);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.13);
+            osc.start(now); osc.stop(now + 0.14);
+          }
+        } catch (e) {}
+      }
+
+      function playSpringSound(open) {
+        if (audioBroken) return;
+        var ctx = initAudio();
+        if (!ctx) return;
+
+        if (ctx.state === 'running') { tone(open); return; }
+
+        var r = ctx.resume();
+        if (r && r.then) {
+          r.then(function () {
+            if (ctx.state === 'running') { markUnlocked(); tone(open); }
+          }).catch(function () {});
+        }
+      }
+
+      function resumeIfNeeded() {
+        if (audioBroken) return;
+        var ctx = initAudio();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') unlockAudio();
+      }
+
+      /* ── 构建便签 DOM ── */
+      function buildItems() {
+        var frag = document.createDocumentFragment();
+        state.pills = [];
+
+        PROFILE.items.forEach(function (item, i) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'folder-float__item';
+          btn.style.setProperty('--i', String(i));
+          btn.setAttribute('aria-hidden', 'true');
+          btn.tabIndex = -1;
+
+          var span = document.createElement('span');
+          span.className = 'folder-float__drift';
+          span.textContent = item.label;
+          btn.appendChild(span);
+
+          btn.addEventListener('click', function () {
+            pick(item, i);
+            unlockAudio();
+          });
+
+          frag.appendChild(btn);
+          state.pills.push({
+            el: btn, index: i, item: item,
+            x: 0, y: 0, vx: 0, vy: 0,
+            w: 0, h: 0, baseR: 0, r: 0, phase: 0,
+            depth: 1,
+            _wx: null, _wy: null, _wr: null,
+            _copyTimer: 0
+          });
+        });
+
+        itemsEl.innerHTML = '';
+        itemsEl.appendChild(frag);
+      }
+
+      /* ── CSS 变量 ── */
+      function applyStyleVars() {
+        var S = state.scale;
+        var st = folderEl.style;
+        st.setProperty('--ff-scale', S.toFixed(4));
+        st.setProperty('--ff-w', (W0 * S).toFixed(1) + 'px');
+        st.setProperty('--ff-h', (H0 * S).toFixed(1) + 'px');
+        st.setProperty('--ff-r', (14 * S).toFixed(1) + 'px');
+        st.setProperty('--ff-back', '#44403c');
+        st.setProperty('--ff-front', '#57534e');
+        st.setProperty('--ff-paper', '#e7e5e4');
+        st.setProperty('--ff-item', '#fafaf9');
+        st.setProperty('--ff-item-ink', '#1c1917');
+        st.setProperty('--ff-label', '#fafaf9');
+        st.setProperty('--ff-angle', '34deg');
+        st.setProperty('--ff-rest', '16deg');
+
+        st.setProperty('--ff-open', OPEN_DURATION + 'ms');
+        st.setProperty('--ff-close', CLOSE_DURATION + 'ms');
+        st.setProperty('--ff-stagger', STAGGER + 'ms');
+        st.setProperty('--ff-stagger-close', STAGGER_CLOSE + 'ms');
+        st.setProperty('--ff-count', String(PROFILE.items.length - 1));
+
+        st.setProperty('--ff-open-ease', 'cubic-bezier(0.22, 1.12, 0.36, 1)');
+        st.setProperty('--ff-close-ease', 'cubic-bezier(0.4, 0, 0.7, 0.3)');
+      }
+
+      /* ── 重新排版 ── */
+      function relayout() {
+        var pills = state.pills;
+        var sizes = pills.map(function (p) {
+          return { w: p.el.offsetWidth, h: p.el.offsetHeight };
+        });
+        var S = state.scale;
+
+        state.positions = layout(PROFILE.items, SPREAD0 * S, LIFT0 * S, TILT0, sizes, S);
+
+        var ys = state.positions.map(function (p) { return p.y; });
+        var maxH = Math.max.apply(null, sizes.map(function (s) { return s.h; }));
+        state.zone = {
+          left:   -SPREAD0 * S - ZONE_PAD * S,
+          right:   SPREAD0 * S + ZONE_PAD * S,
+          top:     Math.min.apply(null, ys) - ZONE_PAD * S,
+          bottom: -LIFT0 * S + maxH
+        };
+
+        pills.forEach(function (p, i) {
+          var pos = state.positions[i];
+          var sz = sizes[i];
+          if (!pos || !sz) return;
+
+          p.w = sz.w;
+          p.h = sz.h;
+          p.baseR = pos.r;
+          p.r = pos.r;
+          p.x = pos.x;
+          p.y = pos.y + sz.h / 2;
+          p.vx = 0;
+          p.vy = 0;
+          p.phase = jitter(i) * Math.PI * 2;
+          p.depth = DEPTH_MIN + jitter(i * 2 + 11) * (DEPTH_MAX - DEPTH_MIN);
+
+          p._wx = pos.x;
+          p._wy = pos.y;
+          p._wr = pos.r;
+
+          p.el.style.setProperty('--x', pos.x.toFixed(1) + 'px');
+          p.el.style.setProperty('--y', pos.y.toFixed(1) + 'px');
+          p.el.style.setProperty('--r', pos.r.toFixed(2) + 'deg');
+        });
+      }
+
+      /* ── 物理引擎 ── */
+      function startPhysics() {
+        if (state.live || !state.open) return;
+        state.live = true;
+        folderEl.setAttribute('data-live', '');
+        state.lastTime = 0;
+        state.startTime = performance.now();
+        state.rafId = requestAnimationFrame(physicsTick);
+      }
+
+      function pausePhysics() {
+        if (!state.live) return;
+        state.live = false;
+        folderEl.removeAttribute('data-live');
+        cancelAnimationFrame(state.rafId);
+        state.rafId = 0;
+      }
+
+      function stopPhysics() {
+        clearTimeout(state.liveTimer);
+        if (!state.live) return;
+        pausePhysics();
+        state.pills.forEach(function (p) {
+          p._wx = Math.round(p.x * 10) / 10;
+          p._wy = Math.round((p.y - p.h / 2) * 10) / 10;
+          p._wr = Math.round(p.r * 100) / 100;
+          p.el.style.setProperty('--x', p._wx + 'px');
+          p.el.style.setProperty('--y', p._wy + 'px');
+          p.el.style.setProperty('--r', p._wr + 'deg');
+        });
+      }
+
+      function writeXY(p, x, y) {
+        var rx = Math.round(x * 10) / 10;
+        var ry = Math.round(y * 10) / 10;
+        if (rx !== p._wx) { p.el.style.setProperty('--x', rx + 'px'); p._wx = rx; }
+        if (ry !== p._wy) { p.el.style.setProperty('--y', ry + 'px'); p._wy = ry; }
+      }
+
+      function writeRot(p, r) {
+        var rr = Math.round(r * 100) / 100;
+        if (rr !== p._wr) { p.el.style.setProperty('--r', rr + 'deg'); p._wr = rr; }
+      }
+
+      function physicsTick(now) {
+        if (!state.live) return;
+
+        var dt = state.lastTime ? Math.min(2, (now - state.lastTime) / 16.667) : 1;
+        state.lastTime = now;
+
+        var pills = state.pills;
+        var n = pills.length;
+        var t = (now - state.startTime) / 1000;
+        var kBase = REDUCED ? 0 : DRIFT * 0.015 * Math.min(1, t / 2);
+        var zone = state.zone;
+
+        var ease = Math.min(1, PARALLAX_EASE * dt);
+        state.parallaxX += (state.parallaxTX - state.parallaxX) * ease;
+        state.parallaxY += (state.parallaxTY - state.parallaxY) * ease;
+
+        var offX = state.parallaxX * PARALLAX_BASE;
+        var offY = state.parallaxY * PARALLAX_BASE;
+
+        for (var i = 0; i < n; i++) {
+          var p = pills[i];
+          var pk = kBase * (0.55 + p.depth * 0.5);
+          p.vx = (p.vx + Math.sin(t * 0.9 + p.phase) * pk * dt) * 0.85;
+          p.vy = (p.vy + Math.cos(t * 1.3 + p.phase * 1.7) * pk * dt) * 0.85;
+          p.r = p.baseR + Math.sin(t * 0.7 + p.phase * 1.4) * 1.25 * p.depth;
+        }
+
+        for (var a = 0; a < n; a++) {
+          var pa = pills[a];
+          for (var b = a + 1; b < n; b++) {
+            var pb = pills[b];
+            var dx = pb.x - pa.x;
+            var dy = pb.y - pa.y;
+            var d2 = dx * dx + dy * dy;
+            var minD = pa.r + pb.r;
+            if (d2 >= minD * minD || d2 === 0) continue;
+
+            var d = Math.sqrt(d2);
+            var nx = dx / d, ny = dy / d;
+            var overlap = (minD - d) * 0.5;
+
+            pa.x -= nx * overlap;  pa.y -= ny * overlap;
+            pb.x += nx * overlap;  pb.y += ny * overlap;
+
+            var vn = (pb.vx - pa.vx) * nx + (pb.vy - pa.vy) * ny;
+            if (vn < 0) {
+              var imp = -vn * 0.4;
+              pa.vx -= nx * imp;  pa.vy -= ny * imp;
+              pb.vx += nx * imp;  pb.vy += ny * imp;
+            }
+          }
+        }
+
+        for (var m = 0; m < n; m++) {
+          var pp = pills[m];
+          var halfW = pp.w / 2;
+          var halfH = pp.h / 2;
+
+          pp.x += pp.vx * dt;
+          pp.y += pp.vy * dt;
+
+          var minX = zone.left + halfW;
+          var maxX = zone.right - halfW;
+          var minY = zone.top + halfH;
+          var maxY = zone.bottom - halfH;
+
+          if (pp.x < minX) { pp.x = minX; pp.vx = Math.abs(pp.vx) * 0.12; }
+          else if (pp.x > maxX) { pp.x = maxX; pp.vx = -Math.abs(pp.vx) * 0.12; }
+          if (pp.y < minY) { pp.y = minY; pp.vy = Math.abs(pp.vy) * 0.12; }
+          else if (pp.y > maxY) { pp.y = maxY; pp.vy = -Math.abs(pp.vy) * 0.12; }
+
+          writeXY(pp, pp.x + offX * pp.depth, pp.y - halfH + offY * pp.depth);
+          writeRot(pp, pp.r);
+        }
+
+        state.rafId = requestAnimationFrame(physicsTick);
+      }
+
+      /* ── 开 / 关 ── */
+      function setOpen(next) {
+        if (state.open === next) return;
+        state.open = next;
+
+        if (next) {
+          playSpringSound(true);
+          folderEl.setAttribute('data-open', '');
+          triggerEl.setAttribute('aria-expanded', 'true');
+          state.pills.forEach(function (p) {
+            p.el.removeAttribute('aria-hidden');
+            p.el.tabIndex = 0;
+          });
+
+          clearTimeout(state.liveTimer);
+          var total = OPEN_DURATION +
+            (state.pills.length - 1) * STAGGER +
+            STAGGER_CLOSE + 40;
+          state.liveTimer = setTimeout(startPhysics, total);
+        } else {
+          playSpringSound(false);
+          stopPhysics();
+          folderEl.removeAttribute('data-open');
+          triggerEl.setAttribute('aria-expanded', 'false');
+          state.pills.forEach(function (p) {
+            p.el.setAttribute('aria-hidden', 'true');
+            p.el.tabIndex = -1;
+          });
+          state.parallaxX = 0;
+          state.parallaxY = 0;
+          state.parallaxTX = 0;
+          state.parallaxTY = 0;
+        }
+      }
+
+      /* ── 便签按压反馈 ── */
+      function showPop(el) {
+        el.removeAttribute('data-pop');
+        void el.offsetWidth;
+        el.setAttribute('data-pop', '');
+        clearTimeout(state.popTimer);
+        state.popTimer = setTimeout(function () {
+          el.removeAttribute('data-pop');
+        }, 400);
+      }
+
+      /* ══════════════════════════════════════════════════════════
+         复制到剪贴板
+         ══════════════════════════════════════════════════════════ */
+      function legacyCopy(text) {
+        try {
+          var ta = document.createElement('textarea');
+          ta.value = text;
+          ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed';
+          ta.style.top = '-9999px';
+          ta.style.left = '-9999px';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+
+          var sel = document.getSelection();
+          var prevRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
+
+          ta.select();
+          ta.setSelectionRange(0, text.length);
+          var ok = false;
+          try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+
+          document.body.removeChild(ta);
+          if (prevRange && sel) {
+            sel.removeAllRanges();
+            sel.addRange(prevRange);
+          }
+          return ok;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(text).then(
+            function () { return true; },
+            function () { return legacyCopy(text); }
+          );
+        }
+        return Promise.resolve(legacyCopy(text));
+      }
+
+      function showCopyFeedback(pill, ok) {
+        if (!pill) return;
+        var span = pill.el.querySelector('.folder-float__drift');
+        if (!span) return;
+
+        span.textContent = ok ? '✓ 已复制' : '✕ 复制失败';
+        pill.el.setAttribute('data-copied', ok ? 'ok' : 'fail');
+
+        clearTimeout(pill._copyTimer);
+        pill._copyTimer = setTimeout(function () {
+          span.textContent = pill.item.label;
+          pill.el.removeAttribute('data-copied');
+        }, COPY_FEEDBACK_MS);
+      }
+
+      /* ── 点击便签：一律复制 ── */
+      function pick(item, i) {
+        var p = state.pills[i];
+
+        var text = /^https?:\/\//i.test(item.value)
+          ? item.value.replace(/\/+$/, '')
+          : item.value;
+
+        copyText(text).then(function (ok) {
+          showCopyFeedback(p, ok);
+        });
+
+        if (p) showPop(p.el);
+      }
+
+      /* ── 事件 ── */
+      var supportsHover = window.matchMedia
+        ? window.matchMedia('(hover: hover)').matches
+        : true;
+
+      if (supportsHover) {
+        folderEl.addEventListener('pointerenter', function () {
+          clearTimeout(state.closeTimer);
+          setOpen(true);
+        });
+
+        folderEl.addEventListener('pointerleave', function () {
+          clearTimeout(state.closeTimer);
+          state.closeTimer = setTimeout(function () { setOpen(false); }, 140);
+        });
+
+        folderEl.addEventListener('pointermove', function (e) {
+          if (!state.open) return;
+          var rect = folderEl.getBoundingClientRect();
+          state.parallaxTX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+          state.parallaxTY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+        });
+      }
+
+      triggerEl.addEventListener('click', function () {
+        setOpen(!state.open);
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && state.open) {
+          setOpen(false);
+          triggerEl.focus();
+        }
+      });
+
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+          pausePhysics();
+        } else {
+          resumeIfNeeded();
+          if (state.open) startPhysics();
+        }
+      });
+
+      window.addEventListener('pageshow', function (e) {
+        if (e.persisted) resumeIfNeeded();
+      });
+
+      window.addEventListener('focus', resumeIfNeeded);
+
+      /* ── 自适应缩放 ── */
+      var resizeRaf = 0;
+      function onResize() {
+        var prev = state.scale;
+        state.scale = computeScale();
+        if (Math.abs(prev - state.scale) < 0.001) return;
+
+        applyStyleVars();
+        relayout();
+
+        if (state.open && state.live) {
+          stopPhysics();
+          startPhysics();
+        }
+      }
+
+      window.addEventListener('resize', function () {
+        cancelAnimationFrame(resizeRaf);
+        resizeRaf = requestAnimationFrame(onResize);
+      });
+      window.addEventListener('orientationchange', onResize);
+
+      /* ── 初始化 ── */
+      function init() {
+        initAudio();
+        bindUnlock();
+
+        if (audioCtx && audioCtx.state === 'suspended') {
+          var r = audioCtx.resume();
+          if (r && r.then) {
+            r.then(function () {
+              if (audioCtx.state === 'running') markUnlocked();
+            }).catch(function () {});
+          }
+        } else if (audioCtx && audioCtx.state === 'running') {
+          markUnlocked();
+        }
+
+        state.scale = computeScale();
+        applyStyleVars();
+        buildItems();
+        relayout();
+
+        if (document.fonts && document.fonts.ready) {
+          document.fonts.ready.then(function () {
+            if (state.open) return;
+            relayout();
+          });
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+    })();
     </script>
 
     <script>
