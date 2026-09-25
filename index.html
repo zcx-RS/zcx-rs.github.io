@@ -220,7 +220,7 @@
         .ai-bottom-box:hover{transform:translateY(-6px);box-shadow:0 16px 32px rgba(0,0,0,0.15);}
         .ai-bottom-box img{width:100%;height:100%;object-fit:cover;display:block;}
         @keyframes mediaPlaceholderDark{from{background-position:0% 50%;}to{background-position:100% 50%;}}
-        #detail4{--animation-gap:clamp(10px,1.4vw,18px);padding:var(--animation-gap) var(--animation-gap) calc(80px + var(--animation-gap));background:var(--bg);justify-content:stretch;overflow:hidden;}
+        #detail4{--animation-gap:clamp(10px,1.4vw,18px);padding:var(--animation-gap) var(--animation-gap) calc(80px + var(--animation-gap));background:var(--bg);overflow-x:hidden;overflow-y:auto;}
         .animation-video-layout{width:100%;height:calc(100vh - 80px - (var(--animation-gap) * 2));height:calc(100svh - 80px - (var(--animation-gap) * 2));min-height:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;justify-items:stretch;gap:var(--animation-gap);}
         .animation-video-card{--video-ratio:16/9;position:relative;width:100%;height:100%;min-height:0;border:none;border-radius:18px;background:#000;overflow:hidden;cursor:pointer;padding:0;color:#fff;box-shadow:0 18px 44px rgba(0,0,0,0.28);transition:filter 0.3s ease,transform 0.3s ease,box-shadow 0.3s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
         .animation-video-card:hover{filter:brightness(1.12);transform:translateY(-4px);box-shadow:0 24px 58px rgba(0,0,0,0.38);}
@@ -230,6 +230,9 @@
         .animation-video-card::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-top:clamp(11px,1.2vw,15px) solid transparent;border-bottom:clamp(11px,1.2vw,15px) solid transparent;border-left:clamp(17px,1.8vw,24px) solid #fff;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.28));transform:translate(calc(-50% + 4px),-50%);transition:transform 0.25s ease;pointer-events:none;z-index:3;}
         .animation-video-card:hover::before{background:rgba(255,255,255,0.3);box-shadow:0 16px 34px rgba(0,0,0,0.32),inset 0 1px 0 rgba(255,255,255,0.68);transform:translate(-50%,-50%) scale(1.06);}
         .animation-video-card:hover::after{transform:translate(calc(-50% + 6px),-50%) scale(1.06);}
+        /* ── 通屏动画视频容器（动画制作页底部） ── */
+        .animation-wide-video{width:100%;margin-top:var(--animation-gap,16px);}
+        .animation-video-card--wide{width:100%;height:auto;min-height:0;aspect-ratio:var(--video-ratio,16/9);border-radius:18px;}
         .theater-fullscreen-overlay{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.3s ease,visibility 0.3s ease;}
         .theater-fullscreen-overlay.active{opacity:1;visibility:visible;pointer-events:auto;}
         .theater-fullscreen-overlay video{width:100%;height:100%;object-fit:contain;background:#000;display:block;}
@@ -655,6 +658,7 @@
             .animation-video-layout{height:auto;min-height:auto;grid-template-columns:1fr;gap:var(--animation-gap);padding:0;}
             .animation-video-card{height:auto;min-height:auto;aspect-ratio:var(--video-ratio,16/9);border-radius:12px;}
             .animation-video-card video{object-fit:contain;}
+            .animation-video-card--wide{border-radius:12px;}
             .back-btn{height:64px;font-size:1.05rem;border-radius:16px 16px 0 0;padding-bottom:var(--safe-bottom);}
             .back-arrow{width:22px;height:22px;}
             .focus-line{font-size:clamp(3.35rem,18vw,5.9rem);}
@@ -1006,6 +1010,7 @@
                 bottom: ["https://img.alicdn.com/imgextra/i3/3952997314/O1CN01CGft5C23trxiQQdDq_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN015rF3oT23trxhiA3T7_!!3952997314.webp"]
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
+            const wideAnimationVideo = "https://cloud.video.taobao.com/vod/c7DqX4DFgne843l-hq3LXBUPHXuSUuL33wK-utjVbes.mp4";
 
             const detail1TopRow = [
                 "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
@@ -1206,12 +1211,16 @@
                 if (!isMobile()) {
                     page3Videos.forEach(v => { const src = v.currentSrc || v.src; if (src) preloadVideo(src); });
                     animationVideos.forEach(preloadVideo);
+                    preloadVideo(wideAnimationVideo);
                 }
             }
 
             function preloadDetailAssets(id) {
                 preloadImagesSequential(detailImageSources(id));
-                if (id === "detail4" && !isMobile()) animationVideos.forEach(preloadVideo);
+                if (id === "detail4" && !isMobile()) {
+                    animationVideos.forEach(preloadVideo);
+                    preloadVideo(wideAnimationVideo);
+                }
             }
 
             function scheduleWarmupDetailAssets() { if (warmupStarted) return;
@@ -1250,7 +1259,8 @@
                 }
                 if (id === "detail3") { content.innerHTML = `<div class="ai-layout"><div class="ai-top-container">${imageTag(aiImages.top, 0, "AI作品")}</div><div class="ai-bottom-row">${aiImages.bottom.map((src, i) => `<div class="ai-bottom-box">${imageTag(src, i + 1, `AI案例${i + 1}`)}</div>`).join("")}</div></div>`; }
                 if (id === "detail4") {
-                    content.innerHTML = `<div class="animation-video-layout">${animationVideos.map((src, i) => `<div class="animation-video-card" role="button" tabindex="0" data-video-src="${escapeHtml(src)}" aria-label="查看动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="0.12"></video></div>`).join("")}</div>`;
+                    content.innerHTML = `<div class="animation-video-layout">${animationVideos.map((src, i) => `<div class="animation-video-card" role="button" tabindex="0" data-video-src="${escapeHtml(src)}" aria-label="查看动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="0.12"></video></div>`).join("")}</div>`
+                        + `<div class="animation-wide-video"><div class="animation-video-card animation-video-card--wide" role="button" tabindex="0" data-video-src="${escapeHtml(wideAnimationVideo)}" aria-label="查看完整动画视频"><video src="${escapeHtml(wideAnimationVideo)}" muted playsinline preload="metadata" data-cover-time="0.12"></video></div></div>`;
                     bindAnimationCards(content);
                 }
                 content.querySelectorAll("img").forEach(img => {
