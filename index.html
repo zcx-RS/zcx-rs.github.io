@@ -247,28 +247,38 @@
         .animation-modal-close svg{width:24px;height:24px;}
 
         /* ═══════════════════════════════════════════════════════════
-           联系方式 · FolderFloat 文件夹浮层
+           联系方式 · FolderFloat（stage 布局 · 可拖拽版）
            ═══════════════════════════════════════════════════════════ */
         #detail-contact{
-            align-items:center;
-            justify-content:center;
-            padding:6vh 2vw calc(80px + 6vh);
+            padding:0;
+            overflow:hidden;
         }
-        #detail-contact .detail-content{
+
+        .stage{
+            position:absolute;
+            inset:0;
+            display:grid;
+            place-items:center;
+            padding-top:clamp(3vh,8vh,12vh);
+            padding-bottom:calc(96px + var(--safe-bottom,0px));
+            box-sizing:border-box;
+        }
+
+        .stage__inner{
             display:flex;
             flex-direction:column;
             align-items:center;
-            justify-content:center;
-            gap:clamp(18px,4.5vh,46px);
-            width:100%;
+            gap:clamp(18px,3vh,36px);
         }
-        .contact-hint{
+
+        .stage__hint{
             font-size:clamp(11px,1.05vw,15px);
             letter-spacing:0.06em;
             color:#57534e;
             opacity:0.62;
-            pointer-events:none;
             text-align:center;
+            white-space:nowrap;
+            pointer-events:none;
             user-select:none;
         }
 
@@ -310,12 +320,12 @@
             line-height:1.25;
             white-space:nowrap;
             cursor:pointer;
-            touch-action:manipulation;
+            touch-action:none;
             pointer-events:none;
             opacity:0;
-            transform:translate3d(-50%,0,0) scale(0.4) rotate(0deg);
+            transform:translate3d(-50%,0,0) scale(0.4);
             transform-origin:50% 50%;
-            will-change:transform,opacity;
+            will-change:transform;
             box-shadow:
                 inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
                 0 calc(6px * var(--ff-scale,1)) calc(14px * var(--ff-scale,1))
@@ -346,24 +356,32 @@
                 box-shadow 200ms ease;
         }
 
-        /* 复制成功：白底 + 橙字 */
+        .folder-float[data-live] .folder-float__item{
+            transition:color 240ms ease,box-shadow 200ms ease;
+        }
+
+        .folder-float__item[data-dragging]{
+            transition:none!important;
+            z-index:10;
+            cursor:grabbing;
+            box-shadow:
+                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
+                0 calc(22px * var(--ff-scale,1)) calc(38px * var(--ff-scale,1))
+                  calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.5);
+        }
+
         .folder-float__item[data-copied="ok"]{
             background:var(--ff-item,#fafaf9);
             color:rgb(255,140,66);
         }
 
-        /* 复制失败：白底 + 红字 */
         .folder-float__item[data-copied="fail"]{
             background:var(--ff-item,#fafaf9);
             color:#dc2626;
         }
 
-        .folder-float[data-live] .folder-float__item{
-            transition:box-shadow 200ms ease;
-        }
-
         @media (hover: hover){
-            .folder-float__item:hover{
+            .folder-float__item:not([data-dragging]):hover{
                 box-shadow:
                     inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
                     0 calc(14px * var(--ff-scale,1)) calc(26px * var(--ff-scale,1))
@@ -376,7 +394,7 @@
             outline-offset:3px;
         }
 
-        .folder-float__item:active{
+        .folder-float__item:not([data-dragging]):active{
             transform:translate3d(
                 calc(-50% + var(--x,0px)),
                 var(--y,0px),
@@ -645,7 +663,7 @@
             .page4{padding-bottom:env(safe-area-inset-bottom);}
             .animation-video-card::before{width:clamp(44px,10vw,56px);height:clamp(44px,10vw,56px);}
             .animation-video-card::after{border-top-width:clamp(9px,2vw,11px);border-bottom-width:clamp(9px,2vw,11px);border-left-width:clamp(14px,3vw,17px);}
-            #detail-contact{padding:calc(60px + 2vh) 16px calc(110px + 2vh);justify-content:center;}
+            #detail-contact{padding:0;justify-content:center;}
         }
 
         /* ═══════════════════════════════════════════════════════════
@@ -804,29 +822,31 @@
         <button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button>
     </div>
 
-    <!-- ══════════ 二级页：联系方式 ══════════ -->
+    <!-- ══════════ 二级页：联系方式（新版 FolderFloat） ══════════ -->
     <div class="detail-page" id="detail-contact">
-        <div class="detail-content">
-            <div class="folder-float" id="contactFolder">
-                <div class="folder-float__items" id="contactItems"></div>
-                <div class="folder-float__folder">
-                    <span class="folder-float__back" aria-hidden="true"></span>
-                    <span class="folder-float__paper" aria-hidden="true"></span>
-                    <span class="folder-float__front" aria-hidden="true">
-                        <span class="folder-float__label">周成鑫</span>
-                        <span class="folder-float__sub">3D渲染师</span>
-                    </span>
-                    <button
-                        type="button"
-                        class="folder-float__trigger"
-                        id="contactTrigger"
-                        aria-expanded="false"
-                        aria-controls="contactItems"
-                        aria-label="周成鑫, 3D渲染师 —— 展开联系方式"
-                    ></button>
+        <div class="stage">
+            <div class="stage__inner">
+                <div class="folder-float" id="contactFolder">
+                    <div class="folder-float__items" id="contactItems"></div>
+                    <div class="folder-float__folder">
+                        <span class="folder-float__back" aria-hidden="true"></span>
+                        <span class="folder-float__paper" aria-hidden="true"></span>
+                        <span class="folder-float__front" aria-hidden="true">
+                            <span class="folder-float__label">周成鑫</span>
+                            <span class="folder-float__sub">3D渲染师</span>
+                        </span>
+                        <button
+                            type="button"
+                            class="folder-float__trigger"
+                            id="contactTrigger"
+                            aria-expanded="false"
+                            aria-controls="contactItems"
+                            aria-label="周成鑫, 3D渲染师 —— 展开联系方式"
+                        ></button>
+                    </div>
                 </div>
+                <p class="stage__hint">悬停打开 · 拖拽便签 · 点击复制</p>
             </div>
-            <p class="contact-hint">悬停打开 · 点击便签复制</p>
         </div>
         <button class="back-btn back-btn--ghost" type="button" aria-label="回到首页">
             <span class="back-btn-content">
@@ -987,7 +1007,6 @@
             };
             const animationVideos = ["https://cloud.video.taobao.com/vod/7E2muSu9vPhyMlHa4WFmHyelHlCE3xyB2cV_KCfpIho.mp4","https://cloud.video.taobao.com/vod/Yv3YxqBXAKiz4c07musQF34EBDtfiaR9Ph6QAIQB1ng.mp4","https://cloud.video.taobao.com/vod/Eno9b4lkpI8pnK73EAmVU1_BMDkzKR_AUeRr1rBCFMQ.mp4"];
 
-            // ===== detail1 前三排图片常量（顺序：第一排 → 第二排 → 第三排）=====
             const detail1TopRow = [
                 "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01OdUczlwDVIC1bRyA_!!3952997314.webp",
@@ -1148,7 +1167,6 @@
 
             function requestIdleTask(callback, timeout = 1200) { if ("requestIdleCallback" in window) window.requestIdleCallback(callback, { timeout }); else setTimeout(callback, isMobile() ? 300 : 500); }
 
-            // 返回 detail 页完整有序图片列表（detail1：第一排 → 第二排 → 第三排 → 其余 → 尾部）
             function detailImageSources(id) {
                 if (id === "detail1") {
                     return [
@@ -1182,7 +1200,6 @@
                 video.load(); }
 
             function preloadAllMediaAggressively() {
-                // 严格按前排优先顺序预加载
                 preloadImagesSequential(detailImageSources("detail1"));
                 preloadImagesSequential(detailImageSources("detail2"));
                 preloadImagesSequential(detailImageSources("detail3"));
@@ -1205,7 +1222,6 @@
 
             function imageTag(src, index, alt) { const url = escapeHtml(originalImageUrl(src)); const altText = escapeHtml(alt); return `<img src="${url}" data-original-src="${url}" alt="${altText}" decoding="async" fetchpriority="high">`; }
 
-            // detail1 前三排图片 + 后续图片 + 尾部大图
             function galleryMarkup(id, images) {
                 if (id === "detail1") {
                     const items = [
@@ -1227,6 +1243,7 @@
             function renderDetail(id) {
                 const page = document.getElementById(id);
                 const content = page.querySelector(".detail-content");
+                if (!content) return;
                 if (content.dataset.rendered === "true") return;
                 if (id === "detail1" || id === "detail2") {
                     content.innerHTML = galleryMarkup(id, galleryImages[id]);
@@ -1425,7 +1442,6 @@
             document.addEventListener("mouseleave", () => { window.mouseX = 0; });
             startTitleAnimation();
 
-            // ============ 滚动系统 ============
             const EasingFunctions = {
                 easeOutExpo: t => t === 1 ? 1 : 1 - Math.pow(2, -10 * t),
                 easeInOutExpo: t => {
@@ -1604,7 +1620,6 @@
                 }
             }
 
-            /* ── 导航：联系方式（二级页）── */
             document.getElementById("contactLink").addEventListener("click", e => {
                 e.preventDefault();
                 showDetail("detail-contact");
@@ -1702,7 +1717,6 @@
                     snapAnimating = false; 
                 }
             });
-            // ============ 滚动系统结束 ============
 
             document.addEventListener("mousemove", e => { lastMouseX = e.clientX; lastMouseY = e.clientY; if (!isMobile() && currentPage === "home" && activeHomeSection === 4) { smileCursor.style.left = `${e.clientX}px`; smileCursor.style.top = `${e.clientY}px`; } });
 
@@ -1931,17 +1945,17 @@
         })();
     </script>
 
-    <!-- ══════════ 联系方式 · FolderFloat 交互脚本 ══════════ -->
+    <!-- ══════════ 联系方式 · FolderFloat 交互脚本（可拖拽版） ══════════ -->
     <script>
     (function () {
       'use strict';
 
+      var hostEl    = document.getElementById('detail-contact');
       var folderEl  = document.getElementById('contactFolder');
-      if (!folderEl) return;
       var itemsEl   = document.getElementById('contactItems');
       var triggerEl = document.getElementById('contactTrigger');
+      if (!hostEl || !folderEl || !itemsEl || !triggerEl) return;
 
-      /* ── 配置 ── */
       var PROFILE = {
         label: '周成鑫',
         sublabel: '3D渲染师',
@@ -1955,7 +1969,6 @@
         ]
       };
 
-      /* ── 常量 ── */
       var W0 = 200, H0 = 148;
       var SPREAD0 = 180, LIFT0 = 26, TILT0 = 8;
       var ROW0 = 52, GAP0 = 12, PAD0 = 28, CHAR0 = 6.8;
@@ -1964,7 +1977,6 @@
       var STAGGER = 34;
       var STAGGER_CLOSE = 20;
       var CLOSE_DURATION = 240;
-      var ZONE_PAD = 8;
 
       var DRIFT = 0.5;
 
@@ -1973,20 +1985,29 @@
       var DEPTH_MAX = 1.85;
       var PARALLAX_EASE = 0.16;
 
+      var SPRING_PULL = 0.032;
+      var SPRING_DAMP = 0.82;
+
+      var PUSH_STRENGTH = 1.0;
+      var PUSH_IMPULSE = 0.55;
+      var PUSHED_DAMP = 0.78;
+
       var COPY_FEEDBACK_MS = 1000;
 
       var REDUCED = window.matchMedia
         ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
         : false;
 
-      /* ── 状态 ── */
+      var CONTENT_W = 540;
+      var CONTENT_V = 398;
+      var HINT_H = 56;
+
       var state = {
         scale: 1,
         open: false,
         live: false,
         pills: [],
         positions: [],
-        zone: null,
         rafId: 0,
         liveTimer: 0,
         popTimer: 0,
@@ -1994,10 +2015,11 @@
         lastTime: 0,
         startTime: 0,
         parallaxX: 0, parallaxY: 0,
-        parallaxTX: 0, parallaxTY: 0
+        parallaxTX: 0, parallaxTY: 0,
+        dragging: null,
+        wasDragging: false
       };
 
-      /* ── 工具 ── */
       function jitter(i) {
         var x = Math.sin(i * 12.9898 + 4.1414) * 43758.5453;
         return x - Math.floor(x);
@@ -2006,9 +2028,18 @@
       function computeScale() {
         var vw = window.innerWidth;
         var vh = window.innerHeight;
-        var byW = (vw * 0.85) / 560;
-        var byH = (vh * 0.85) / 314;
-        return Math.max(0.75, Math.min(Math.min(byW, byH), 3.2));
+
+        var footerH = 96;
+        var availW = vw * 0.92;
+        var availH = vh - footerH - Math.max(vh * 0.03, 12) - HINT_H;
+
+        var byW = availW / CONTENT_W;
+        var byH = availH / CONTENT_V;
+
+        var landscape = vw > vh;
+        var minScale = landscape ? 0.5 : 0.62;
+
+        return Math.max(minScale, Math.min(Math.min(byW, byH), 3.0));
       }
 
       function layout(list, spread, lift, tilt, sizes, s) {
@@ -2045,105 +2076,54 @@
         return pos;
       }
 
-      /* ══════════════════════════════════════════════════════════
-         音效
-         ══════════════════════════════════════════════════════════ */
-      var audioCtx = null;
-      var audioMaster = null;
-      var audioBroken = false;
-      var audioUnlocked = false;
-      var unlockBound = false;
-
-      var UNLOCK_EVENTS = [
-        'pointerdown', 'mousedown', 'touchstart', 'touchend',
-        'keydown', 'click', 'wheel', 'scroll'
-      ];
+      /* ── 音效 ── */
+      var audioCtx = null, audioMaster = null;
+      var audioBroken = false, audioUnlocked = false, unlockBound = false;
+      var UNLOCK_EVENTS = ['pointerdown','mousedown','touchstart','touchend','keydown','click','wheel','scroll'];
 
       function initAudio() {
         if (audioCtx || audioBroken) return audioCtx;
         var AC = window.AudioContext || window.webkitAudioContext;
         if (!AC) { audioBroken = true; return null; }
-        try {
-          audioCtx = new AC();
-        } catch (e) {
-          audioBroken = true;
-          audioCtx = null;
-          return null;
-        }
+        try { audioCtx = new AC(); } catch (e) { audioBroken = true; audioCtx = null; return null; }
         if (audioCtx.state === 'running') audioUnlocked = true;
         return audioCtx;
       }
-
       function ensureMaster() {
         if (audioMaster || !audioCtx) return audioMaster;
         try {
-          var g = audioCtx.createGain();
-          g.gain.value = 0.85;
-
-          var f = audioCtx.createBiquadFilter();
-          f.type = 'lowpass';
-          f.frequency.value = 4200;
-          f.Q.value = 0.6;
-
-          g.connect(f);
-          f.connect(audioCtx.destination);
+          var g = audioCtx.createGain(); g.gain.value = 0.85;
+          var f = audioCtx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 4200; f.Q.value = 0.6;
+          g.connect(f); f.connect(audioCtx.destination);
           audioMaster = g;
-        } catch (e) {
-          audioMaster = null;
-        }
+        } catch (e) { audioMaster = null; }
         return audioMaster;
       }
-
       function bindUnlock() {
-        if (unlockBound) return;
-        unlockBound = true;
-        UNLOCK_EVENTS.forEach(function (type) {
-          window.addEventListener(type, unlockAudio, {
-            capture: true, passive: true
-          });
-        });
+        if (unlockBound) return; unlockBound = true;
+        UNLOCK_EVENTS.forEach(function (t) { window.addEventListener(t, unlockAudio, { capture:true, passive:true }); });
       }
-
       function unbindUnlock() {
-        if (!unlockBound) return;
-        unlockBound = false;
-        UNLOCK_EVENTS.forEach(function (type) {
-          window.removeEventListener(type, unlockAudio, { capture: true });
-        });
+        if (!unlockBound) return; unlockBound = false;
+        UNLOCK_EVENTS.forEach(function (t) { window.removeEventListener(t, unlockAudio, { capture:true }); });
       }
-
       function primeSilent() {
         if (!audioCtx) return;
         try {
           var buf = audioCtx.createBuffer(1, 1, audioCtx.sampleRate || 22050);
-          var src = audioCtx.createBufferSource();
-          src.buffer = buf;
-          src.connect(audioCtx.destination);
-          src.start(0);
+          var src = audioCtx.createBufferSource(); src.buffer = buf;
+          src.connect(audioCtx.destination); src.start(0);
         } catch (e) {}
       }
-
       function markUnlocked() {
-        if (audioUnlocked) return;
-        audioUnlocked = true;
-        primeSilent();
-        unbindUnlock();
+        if (audioUnlocked) return; audioUnlocked = true; primeSilent(); unbindUnlock();
       }
-
       function unlockAudio() {
-        var ctx = initAudio();
-        if (!ctx) return;
-
+        var ctx = initAudio(); if (!ctx) return;
         if (ctx.state === 'running') { markUnlocked(); return; }
-
         var r = ctx.resume();
-        if (r && r.then) {
-          r.then(function () {
-            if (ctx.state === 'running') markUnlocked();
-          }).catch(function () {});
-        }
+        if (r && r.then) r.then(function () { if (ctx.state === 'running') markUnlocked(); }).catch(function(){});
       }
-
       function tone(open) {
         if (!audioCtx || audioCtx.state !== 'running') return;
         var out = ensureMaster() || audioCtx.destination;
@@ -2151,10 +2131,7 @@
           var now = audioCtx.currentTime;
           var osc = audioCtx.createOscillator();
           var gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.connect(gain);
-          gain.connect(out);
-
+          osc.type = 'sine'; osc.connect(gain); gain.connect(out);
           if (open) {
             osc.frequency.setValueAtTime(620, now);
             osc.frequency.exponentialRampToValueAtTime(1180, now + 0.06);
@@ -2172,30 +2149,20 @@
           }
         } catch (e) {}
       }
-
       function playSpringSound(open) {
         if (audioBroken) return;
-        var ctx = initAudio();
-        if (!ctx) return;
-
+        var ctx = initAudio(); if (!ctx) return;
         if (ctx.state === 'running') { tone(open); return; }
-
         var r = ctx.resume();
-        if (r && r.then) {
-          r.then(function () {
-            if (ctx.state === 'running') { markUnlocked(); tone(open); }
-          }).catch(function () {});
-        }
+        if (r && r.then) r.then(function () { if (ctx.state === 'running') { markUnlocked(); tone(open); } }).catch(function(){});
       }
-
       function resumeIfNeeded() {
         if (audioBroken) return;
-        var ctx = initAudio();
-        if (!ctx) return;
+        var ctx = initAudio(); if (!ctx) return;
         if (ctx.state === 'suspended') unlockAudio();
       }
 
-      /* ── 构建便签 DOM ── */
+      /* ── 构建便签 ── */
       function buildItems() {
         var frag = document.createDocumentFragment();
         state.pills = [];
@@ -2213,8 +2180,19 @@
           span.textContent = item.label;
           btn.appendChild(span);
 
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', function (e) {
+            if (state.wasDragging) {
+              state.wasDragging = false;
+              e.preventDefault(); e.stopPropagation();
+              return;
+            }
             pick(item, i);
+            unlockAudio();
+          });
+
+          btn.addEventListener('pointerdown', function (e) {
+            if (!state.open) return;
+            startDrag(i, e);
             unlockAudio();
           });
 
@@ -2222,8 +2200,11 @@
           state.pills.push({
             el: btn, index: i, item: item,
             x: 0, y: 0, vx: 0, vy: 0,
-            w: 0, h: 0, baseR: 0, r: 0, phase: 0,
-            depth: 1,
+            homeX: 0, homeY: 0,
+            w: 0, h: 0,
+            rx: 20, ry: 20,
+            baseR: 0, r: 0, phase: 0,
+            depth: 1, pushed: 0,
             _wx: null, _wy: null, _wr: null,
             _copyTimer: 0
           });
@@ -2233,7 +2214,6 @@
         itemsEl.appendChild(frag);
       }
 
-      /* ── CSS 变量 ── */
       function applyStyleVars() {
         var S = state.scale;
         var st = folderEl.style;
@@ -2249,20 +2229,19 @@
         st.setProperty('--ff-label', '#fafaf9');
         st.setProperty('--ff-angle', '34deg');
         st.setProperty('--ff-rest', '16deg');
-
         st.setProperty('--ff-open', OPEN_DURATION + 'ms');
         st.setProperty('--ff-close', CLOSE_DURATION + 'ms');
         st.setProperty('--ff-stagger', STAGGER + 'ms');
         st.setProperty('--ff-stagger-close', STAGGER_CLOSE + 'ms');
         st.setProperty('--ff-count', String(PROFILE.items.length - 1));
-
         st.setProperty('--ff-open-ease', 'cubic-bezier(0.22, 1.12, 0.36, 1)');
         st.setProperty('--ff-close-ease', 'cubic-bezier(0.4, 0, 0.7, 0.3)');
       }
 
-      /* ── 重新排版 ── */
       function relayout() {
         var pills = state.pills;
+        if (!pills.length) return;
+
         var sizes = pills.map(function (p) {
           return { w: p.el.offsetWidth, h: p.el.offsetHeight };
         });
@@ -2270,42 +2249,81 @@
 
         state.positions = layout(PROFILE.items, SPREAD0 * S, LIFT0 * S, TILT0, sizes, S);
 
-        var ys = state.positions.map(function (p) { return p.y; });
-        var maxH = Math.max.apply(null, sizes.map(function (s) { return s.h; }));
-        state.zone = {
-          left:   -SPREAD0 * S - ZONE_PAD * S,
-          right:   SPREAD0 * S + ZONE_PAD * S,
-          top:     Math.min.apply(null, ys) - ZONE_PAD * S,
-          bottom: -LIFT0 * S + maxH
-        };
-
         pills.forEach(function (p, i) {
-          var pos = state.positions[i];
-          var sz = sizes[i];
+          var pos = state.positions[i], sz = sizes[i];
           if (!pos || !sz) return;
 
-          p.w = sz.w;
-          p.h = sz.h;
-          p.baseR = pos.r;
-          p.r = pos.r;
-          p.x = pos.x;
-          p.y = pos.y + sz.h / 2;
-          p.vx = 0;
-          p.vy = 0;
+          p.w = sz.w; p.h = sz.h;
+          p.rx = sz.w * 0.48; p.ry = sz.h * 0.48;
+          p.baseR = pos.r; p.r = pos.r;
+          p.x = pos.x; p.y = pos.y + sz.h / 2;
+          p.homeX = p.x; p.homeY = p.y;
+          p.vx = 0; p.vy = 0; p.pushed = 0;
           p.phase = jitter(i) * Math.PI * 2;
           p.depth = DEPTH_MIN + jitter(i * 2 + 11) * (DEPTH_MAX - DEPTH_MIN);
 
-          p._wx = pos.x;
-          p._wy = pos.y;
-          p._wr = pos.r;
-
+          p._wx = pos.x; p._wy = pos.y; p._wr = pos.r;
           p.el.style.setProperty('--x', pos.x.toFixed(1) + 'px');
           p.el.style.setProperty('--y', pos.y.toFixed(1) + 'px');
           p.el.style.setProperty('--r', pos.r.toFixed(2) + 'deg');
         });
       }
 
-      /* ── 物理引擎 ── */
+      /* ── 拖拽 ── */
+      function startDrag(i, e) {
+        var pill = state.pills[i]; if (!pill) return;
+        var folderRect = folderEl.getBoundingClientRect();
+        var itemRect = pill.el.getBoundingClientRect();
+        var ox = folderRect.width / 2;
+        var oy = folderRect.height * 0.44;
+        var px = e.clientX - folderRect.left - ox;
+        var py = e.clientY - folderRect.top - oy;
+        var cx = itemRect.left + itemRect.width / 2 - folderRect.left - ox;
+        var cy = itemRect.top + itemRect.height / 2 - folderRect.top - oy;
+        var grabX = px - cx, grabY = py - cy;
+
+        pill.x = cx; pill.y = cy; pill.vx = 0; pill.vy = 0;
+
+        state.dragging = {
+          pill: pill, pointerId: e.pointerId,
+          grabX: grabX, grabY: grabY,
+          targetX: cx, targetY: cy,
+          lastClientX: e.clientX, lastClientY: e.clientY,
+          moved: false,
+          rectLeft: folderRect.left, rectTop: folderRect.top,
+          ox: ox, oy: oy
+        };
+
+        pill.el.setAttribute('data-dragging', '');
+        try { pill.el.setPointerCapture(e.pointerId); } catch (err) {}
+
+        window.addEventListener('pointermove', onDragMove);
+        window.addEventListener('pointerup', endDrag);
+        window.addEventListener('pointercancel', endDrag);
+        e.preventDefault();
+      }
+
+      function onDragMove(e) {
+        var d = state.dragging;
+        if (!d || e.pointerId !== d.pointerId) return;
+        d.targetX = e.clientX - d.rectLeft - d.ox - d.grabX;
+        d.targetY = e.clientY - d.rectTop - d.oy - d.grabY;
+        if (Math.abs(e.clientX - d.lastClientX) > 1 || Math.abs(e.clientY - d.lastClientY) > 1) d.moved = true;
+      }
+
+      function endDrag(e) {
+        var d = state.dragging;
+        if (!d || (e && e.pointerId !== d.pointerId)) return;
+        state.dragging = null;
+        state.wasDragging = d.moved;
+        d.pill.el.removeAttribute('data-dragging');
+        try { d.pill.el.releasePointerCapture(d.pointerId); } catch (err) {}
+        window.removeEventListener('pointermove', onDragMove);
+        window.removeEventListener('pointerup', endDrag);
+        window.removeEventListener('pointercancel', endDrag);
+      }
+
+      /* ── 物理 ── */
       function startPhysics() {
         if (state.live || !state.open) return;
         state.live = true;
@@ -2314,7 +2332,6 @@
         state.startTime = performance.now();
         state.rafId = requestAnimationFrame(physicsTick);
       }
-
       function pausePhysics() {
         if (!state.live) return;
         state.live = false;
@@ -2322,105 +2339,95 @@
         cancelAnimationFrame(state.rafId);
         state.rafId = 0;
       }
-
       function stopPhysics() {
         clearTimeout(state.liveTimer);
         if (!state.live) return;
         pausePhysics();
-        state.pills.forEach(function (p) {
-          p._wx = Math.round(p.x * 10) / 10;
-          p._wy = Math.round((p.y - p.h / 2) * 10) / 10;
-          p._wr = Math.round(p.r * 100) / 100;
-          p.el.style.setProperty('--x', p._wx + 'px');
-          p.el.style.setProperty('--y', p._wy + 'px');
-          p.el.style.setProperty('--r', p._wr + 'deg');
-        });
       }
-
       function writeXY(p, x, y) {
-        var rx = Math.round(x * 10) / 10;
-        var ry = Math.round(y * 10) / 10;
+        var rx = Math.round(x * 10) / 10, ry = Math.round(y * 10) / 10;
         if (rx !== p._wx) { p.el.style.setProperty('--x', rx + 'px'); p._wx = rx; }
         if (ry !== p._wy) { p.el.style.setProperty('--y', ry + 'px'); p._wy = ry; }
       }
-
       function writeRot(p, r) {
         var rr = Math.round(r * 100) / 100;
         if (rr !== p._wr) { p.el.style.setProperty('--r', rr + 'deg'); p._wr = rr; }
       }
-
+      function collide(pa, pb, dragPill) {
+        var dx = pb.x - pa.x, dy = pb.y - pa.y;
+        var d2 = dx * dx + dy * dy;
+        if (d2 === 0) return;
+        var maxR = Math.max(pa.rx, pa.ry) + Math.max(pb.rx, pb.ry);
+        if (d2 >= maxR * maxR) return;
+        var d = Math.sqrt(d2);
+        var nx = dx / d, ny = dy / d;
+        var ta = 1 / Math.sqrt((nx / pa.rx) * (nx / pa.rx) + (ny / pa.ry) * (ny / pa.ry));
+        var tb = 1 / Math.sqrt((nx / pb.rx) * (nx / pb.rx) + (ny / pb.ry) * (ny / pb.ry));
+        var minD = ta + tb;
+        if (d >= minD) return;
+        var overlap = minD - d;
+        var paDrag = (pa === dragPill), pbDrag = (pb === dragPill);
+        if (paDrag && pbDrag) return;
+        if (paDrag) {
+          pb.x += nx * overlap * PUSH_STRENGTH; pb.y += ny * overlap * PUSH_STRENGTH;
+          var vn1 = (pb.vx - pa.vx) * nx + (pb.vy - pa.vy) * ny;
+          if (vn1 < 0) { var i1 = -vn1 * PUSH_IMPULSE; pb.vx += nx * i1; pb.vy += ny * i1; }
+          pb.pushed = 6;
+        } else if (pbDrag) {
+          pa.x -= nx * overlap * PUSH_STRENGTH; pa.y -= ny * overlap * PUSH_STRENGTH;
+          var vn2 = (pb.vx - pa.vx) * nx + (pb.vy - pa.vy) * ny;
+          if (vn2 < 0) { var i2 = -vn2 * PUSH_IMPULSE; pa.vx -= nx * i2; pa.vy -= ny * i2; }
+          pa.pushed = 6;
+        } else {
+          var half = overlap * 0.5;
+          pa.x -= nx * half; pa.y -= ny * half;
+          pb.x += nx * half; pb.y += ny * half;
+          var vn3 = (pb.vx - pa.vx) * nx + (pb.vy - pa.vy) * ny;
+          if (vn3 < 0) { var i3 = -vn3 * 0.4; pa.vx -= nx * i3; pa.vy -= ny * i3; pb.vx += nx * i3; pb.vy += ny * i3; }
+        }
+      }
       function physicsTick(now) {
         if (!state.live) return;
-
         var dt = state.lastTime ? Math.min(2, (now - state.lastTime) / 16.667) : 1;
         state.lastTime = now;
-
-        var pills = state.pills;
-        var n = pills.length;
+        var pills = state.pills, n = pills.length;
         var t = (now - state.startTime) / 1000;
         var kBase = REDUCED ? 0 : DRIFT * 0.015 * Math.min(1, t / 2);
-        var zone = state.zone;
-
         var ease = Math.min(1, PARALLAX_EASE * dt);
         state.parallaxX += (state.parallaxTX - state.parallaxX) * ease;
         state.parallaxY += (state.parallaxTY - state.parallaxY) * ease;
-
         var offX = state.parallaxX * PARALLAX_BASE;
         var offY = state.parallaxY * PARALLAX_BASE;
+        var dragPill = state.dragging ? state.dragging.pill : null;
 
         for (var i = 0; i < n; i++) {
           var p = pills[i];
+          if (p === dragPill) {
+            p.x = state.dragging.targetX; p.y = state.dragging.targetY;
+            p.vx = 0; p.vy = 0; continue;
+          }
           var pk = kBase * (0.55 + p.depth * 0.5);
-          p.vx = (p.vx + Math.sin(t * 0.9 + p.phase) * pk * dt) * 0.85;
-          p.vy = (p.vy + Math.cos(t * 1.3 + p.phase * 1.7) * pk * dt) * 0.85;
+          p.vx += Math.sin(t * 0.9 + p.phase) * pk * dt;
+          p.vy += Math.cos(t * 1.3 + p.phase * 1.7) * pk * dt;
+          p.vx += (p.homeX - p.x) * SPRING_PULL;
+          p.vy += (p.homeY - p.y) * SPRING_PULL;
+          var damp = p.pushed > 0 ? PUSHED_DAMP : SPRING_DAMP;
+          p.vx *= damp; p.vy *= damp;
+          if (p.pushed > 0) p.pushed -= dt;
           p.r = p.baseR + Math.sin(t * 0.7 + p.phase * 1.4) * 1.25 * p.depth;
         }
 
         for (var a = 0; a < n; a++) {
-          var pa = pills[a];
-          for (var b = a + 1; b < n; b++) {
-            var pb = pills[b];
-            var dx = pb.x - pa.x;
-            var dy = pb.y - pa.y;
-            var d2 = dx * dx + dy * dy;
-            var minD = pa.r + pb.r;
-            if (d2 >= minD * minD || d2 === 0) continue;
-
-            var d = Math.sqrt(d2);
-            var nx = dx / d, ny = dy / d;
-            var overlap = (minD - d) * 0.5;
-
-            pa.x -= nx * overlap;  pa.y -= ny * overlap;
-            pb.x += nx * overlap;  pb.y += ny * overlap;
-
-            var vn = (pb.vx - pa.vx) * nx + (pb.vy - pa.vy) * ny;
-            if (vn < 0) {
-              var imp = -vn * 0.4;
-              pa.vx -= nx * imp;  pa.vy -= ny * imp;
-              pb.vx += nx * imp;  pb.vy += ny * imp;
-            }
-          }
+          for (var b = a + 1; b < n; b++) collide(pills[a], pills[b], dragPill);
         }
 
         for (var m = 0; m < n; m++) {
-          var pp = pills[m];
-          var halfW = pp.w / 2;
-          var halfH = pp.h / 2;
-
-          pp.x += pp.vx * dt;
-          pp.y += pp.vy * dt;
-
-          var minX = zone.left + halfW;
-          var maxX = zone.right - halfW;
-          var minY = zone.top + halfH;
-          var maxY = zone.bottom - halfH;
-
-          if (pp.x < minX) { pp.x = minX; pp.vx = Math.abs(pp.vx) * 0.12; }
-          else if (pp.x > maxX) { pp.x = maxX; pp.vx = -Math.abs(pp.vx) * 0.12; }
-          if (pp.y < minY) { pp.y = minY; pp.vy = Math.abs(pp.vy) * 0.12; }
-          else if (pp.y > maxY) { pp.y = maxY; pp.vy = -Math.abs(pp.vy) * 0.12; }
-
-          writeXY(pp, pp.x + offX * pp.depth, pp.y - halfH + offY * pp.depth);
+          var pp = pills[m], halfH = pp.h / 2;
+          var isDragging = (pp === dragPill);
+          if (!isDragging) { pp.x += pp.vx * dt; pp.y += pp.vy * dt; }
+          var px = isDragging ? 0 : offX * pp.depth;
+          var py = isDragging ? 0 : offY * pp.depth;
+          writeXY(pp, pp.x + px, pp.y - halfH + py);
           writeRot(pp, pp.r);
         }
 
@@ -2436,165 +2443,139 @@
           playSpringSound(true);
           folderEl.setAttribute('data-open', '');
           triggerEl.setAttribute('aria-expanded', 'true');
-          state.pills.forEach(function (p) {
-            p.el.removeAttribute('aria-hidden');
-            p.el.tabIndex = 0;
-          });
-
+          state.pills.forEach(function (p) { p.el.removeAttribute('aria-hidden'); p.el.tabIndex = 0; });
           clearTimeout(state.liveTimer);
-          var total = OPEN_DURATION +
-            (state.pills.length - 1) * STAGGER +
-            STAGGER_CLOSE + 40;
+          var total = OPEN_DURATION + (state.pills.length - 1) * STAGGER + STAGGER_CLOSE + 40;
           state.liveTimer = setTimeout(startPhysics, total);
         } else {
           playSpringSound(false);
+          if (state.dragging) endDrag();
           stopPhysics();
           folderEl.removeAttribute('data-open');
           triggerEl.setAttribute('aria-expanded', 'false');
           state.pills.forEach(function (p) {
             p.el.setAttribute('aria-hidden', 'true');
             p.el.tabIndex = -1;
+            p.x = p.homeX; p.y = p.homeY; p.vx = 0; p.vy = 0; p.pushed = 0; p.r = p.baseR;
+            p._wx = Math.round(p.homeX * 10) / 10;
+            p._wy = Math.round((p.homeY - p.h / 2) * 10) / 10;
+            p._wr = Math.round(p.baseR * 100) / 100;
+            p.el.style.setProperty('--x', p._wx + 'px');
+            p.el.style.setProperty('--y', p._wy + 'px');
+            p.el.style.setProperty('--r', p._wr + 'deg');
           });
-          state.parallaxX = 0;
-          state.parallaxY = 0;
-          state.parallaxTX = 0;
-          state.parallaxTY = 0;
+          state.parallaxX = 0; state.parallaxY = 0;
+          state.parallaxTX = 0; state.parallaxTY = 0;
         }
       }
 
-      /* ── 便签按压反馈 ── */
       function showPop(el) {
         el.removeAttribute('data-pop');
         void el.offsetWidth;
         el.setAttribute('data-pop', '');
         clearTimeout(state.popTimer);
-        state.popTimer = setTimeout(function () {
-          el.removeAttribute('data-pop');
-        }, 400);
+        state.popTimer = setTimeout(function () { el.removeAttribute('data-pop'); }, 400);
       }
 
-      /* ══════════════════════════════════════════════════════════
-         复制到剪贴板
-         ══════════════════════════════════════════════════════════ */
+      /* ── 复制 ── */
       function legacyCopy(text) {
         try {
           var ta = document.createElement('textarea');
-          ta.value = text;
-          ta.setAttribute('readonly', '');
-          ta.style.position = 'fixed';
-          ta.style.top = '-9999px';
-          ta.style.left = '-9999px';
-          ta.style.opacity = '0';
+          ta.value = text; ta.setAttribute('readonly', '');
+          ta.style.position = 'fixed'; ta.style.top = '-9999px'; ta.style.left = '-9999px'; ta.style.opacity = '0';
           document.body.appendChild(ta);
-
           var sel = document.getSelection();
           var prevRange = sel && sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-
-          ta.select();
-          ta.setSelectionRange(0, text.length);
+          ta.select(); ta.setSelectionRange(0, text.length);
           var ok = false;
           try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-
           document.body.removeChild(ta);
-          if (prevRange && sel) {
-            sel.removeAllRanges();
-            sel.addRange(prevRange);
-          }
+          if (prevRange && sel) { sel.removeAllRanges(); sel.addRange(prevRange); }
           return ok;
-        } catch (e) {
-          return false;
-        }
+        } catch (e) { return false; }
       }
-
       function copyText(text) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          return navigator.clipboard.writeText(text).then(
-            function () { return true; },
-            function () { return legacyCopy(text); }
-          );
+          return navigator.clipboard.writeText(text).then(function () { return true; }, function () { return legacyCopy(text); });
         }
         return Promise.resolve(legacyCopy(text));
       }
-
       function showCopyFeedback(pill, ok) {
         if (!pill) return;
         var span = pill.el.querySelector('.folder-float__drift');
         if (!span) return;
-
         span.textContent = ok ? '✓ 已复制' : '✕ 复制失败';
         pill.el.setAttribute('data-copied', ok ? 'ok' : 'fail');
-
         clearTimeout(pill._copyTimer);
         pill._copyTimer = setTimeout(function () {
           span.textContent = pill.item.label;
           pill.el.removeAttribute('data-copied');
         }, COPY_FEEDBACK_MS);
       }
-
-      /* ── 点击便签：一律复制 ── */
       function pick(item, i) {
         var p = state.pills[i];
-
-        var text = /^https?:\/\//i.test(item.value)
-          ? item.value.replace(/\/+$/, '')
-          : item.value;
-
-        copyText(text).then(function (ok) {
-          showCopyFeedback(p, ok);
-        });
-
+        var text = /^https?:\/\//i.test(item.value) ? item.value.replace(/\/+$/, '') : item.value;
+        copyText(text).then(function (ok) { showCopyFeedback(p, ok); });
         if (p) showPop(p.el);
       }
 
       /* ── 事件 ── */
-      var supportsHover = window.matchMedia
-        ? window.matchMedia('(hover: hover)').matches
-        : true;
-
+      var supportsHover = window.matchMedia ? window.matchMedia('(hover: hover)').matches : true;
       if (supportsHover) {
         folderEl.addEventListener('pointerenter', function () {
+          if (state.dragging) return;
           clearTimeout(state.closeTimer);
           setOpen(true);
         });
-
         folderEl.addEventListener('pointerleave', function () {
           clearTimeout(state.closeTimer);
+          if (state.dragging) return;
           state.closeTimer = setTimeout(function () { setOpen(false); }, 140);
         });
-
         folderEl.addEventListener('pointermove', function (e) {
-          if (!state.open) return;
+          if (!state.open || state.dragging) return;
           var rect = folderEl.getBoundingClientRect();
           state.parallaxTX = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
           state.parallaxTY = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
         });
       }
 
-      triggerEl.addEventListener('click', function () {
-        setOpen(!state.open);
-      });
+      triggerEl.addEventListener('click', function () { setOpen(!state.open); });
 
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && state.open) {
-          setOpen(false);
-          triggerEl.focus();
-        }
+        if (e.key === 'Escape' && state.open) { setOpen(false); triggerEl.focus(); }
       });
 
       document.addEventListener('visibilitychange', function () {
-        if (document.hidden) {
-          pausePhysics();
+        if (document.hidden) pausePhysics();
+        else { resumeIfNeeded(); if (state.open) startPhysics(); }
+      });
+
+      window.addEventListener('pageshow', function (e) { if (e.persisted) resumeIfNeeded(); });
+      window.addEventListener('focus', resumeIfNeeded);
+
+      /* ★ 返回按钮：主脚本已经绑了 goBack()，这里只负责先收起文件夹 */
+      var backBtn = hostEl.querySelector('.back-btn');
+      if (backBtn) {
+        backBtn.addEventListener('click', function () {
+          if (state.open) setOpen(false);
+        });
+      }
+
+      /* ★ 二级页显示/隐藏联动 */
+      var mo = new MutationObserver(function () {
+        var active = hostEl.classList.contains('active');
+        if (!active) {
+          if (state.open) setOpen(false);
         } else {
-          resumeIfNeeded();
-          if (state.open) startPhysics();
+          requestAnimationFrame(function () {
+            state.scale = computeScale();
+            applyStyleVars();
+            relayout();
+          });
         }
       });
-
-      window.addEventListener('pageshow', function (e) {
-        if (e.persisted) resumeIfNeeded();
-      });
-
-      window.addEventListener('focus', resumeIfNeeded);
+      mo.observe(hostEl, { attributes: true, attributeFilter: ['class'] });
 
       /* ── 自适应缩放 ── */
       var resizeRaf = 0;
@@ -2602,48 +2583,31 @@
         var prev = state.scale;
         state.scale = computeScale();
         if (Math.abs(prev - state.scale) < 0.001) return;
-
         applyStyleVars();
         relayout();
-
-        if (state.open && state.live) {
-          stopPhysics();
-          startPhysics();
-        }
+        if (state.open && state.live) { stopPhysics(); startPhysics(); }
       }
-
       window.addEventListener('resize', function () {
         cancelAnimationFrame(resizeRaf);
         resizeRaf = requestAnimationFrame(onResize);
       });
       window.addEventListener('orientationchange', onResize);
 
-      /* ── 初始化 ── */
       function init() {
         initAudio();
         bindUnlock();
-
         if (audioCtx && audioCtx.state === 'suspended') {
           var r = audioCtx.resume();
-          if (r && r.then) {
-            r.then(function () {
-              if (audioCtx.state === 'running') markUnlocked();
-            }).catch(function () {});
-          }
+          if (r && r.then) r.then(function () { if (audioCtx.state === 'running') markUnlocked(); }).catch(function(){});
         } else if (audioCtx && audioCtx.state === 'running') {
           markUnlocked();
         }
-
         state.scale = computeScale();
         applyStyleVars();
         buildItems();
         relayout();
-
         if (document.fonts && document.fonts.ready) {
-          document.fonts.ready.then(function () {
-            if (state.open) return;
-            relayout();
-          });
+          document.fonts.ready.then(function () { if (!state.open) relayout(); });
         }
       }
 
