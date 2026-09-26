@@ -218,7 +218,9 @@
         .ai-bottom-box:hover{transform:translateY(-6px);box-shadow:0 16px 32px rgba(0,0,0,0.15);}
         .ai-bottom-box img{width:100%;height:100%;object-fit:cover;display:block;}
         @keyframes mediaPlaceholderDark{from{background-position:0% 50%;}to{background-position:100% 50%;}}
-        #detail4{--animation-gap:clamp(10px,1.4vw,18px);padding:var(--animation-gap) var(--animation-gap) calc(80px + var(--animation-gap));background:var(--bg);overflow-x:hidden;overflow-y:auto;}
+
+        /* ★ 修复：水平内边距与 .detail-page 的 2vw 对齐，避免 detail4 内容比前三个二级页更宽 */
+        #detail4{--animation-gap:clamp(10px,1.4vw,18px);padding:var(--animation-gap) 2vw calc(80px + var(--animation-gap));background:var(--bg);overflow-x:hidden;overflow-y:auto;}
         .animation-video-layout{width:100%;height:calc(100vh - 80px - (var(--animation-gap) * 2));height:calc(100svh - 80px - (var(--animation-gap) * 2));min-height:0;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;justify-items:stretch;gap:var(--animation-gap);}
         .animation-video-card{--video-ratio:16/9;position:relative;width:100%;height:100%;min-height:0;border:none;border-radius:18px;background:#000;overflow:hidden;cursor:pointer;padding:0;color:#fff;box-shadow:0 18px 44px rgba(0,0,0,0.28);transition:filter 0.3s ease,transform 0.3s ease,box-shadow 0.3s ease;-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
         .animation-video-card:hover{filter:brightness(1.12);transform:translateY(-4px);box-shadow:0 24px 58px rgba(0,0,0,0.38);}
@@ -230,6 +232,8 @@
         .animation-video-card:hover::after{transform:translate(calc(-50% + 6px),-50%) scale(1.06);}
         .animation-wide-video{width:100%;margin-top:var(--animation-gap,16px);}
         .animation-video-card--wide{width:100%;height:auto;min-height:0;aspect-ratio:var(--video-ratio,16/9);border-radius:18px;}
+        /* ★ 修复：通屏卡片用 contain，即使 --video-ratio 未及时写入也只是留黑边，不会拉伸变形 */
+        .animation-video-card--wide video{object-fit:contain;background:#000;}
         .theater-fullscreen-overlay{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.3s ease,visibility 0.3s ease;}
         .theater-fullscreen-overlay.active{opacity:1;visibility:visible;pointer-events:auto;}
         .theater-fullscreen-overlay video{width:100%;height:100%;object-fit:contain;background:#000;display:block;}
@@ -360,7 +364,8 @@
             .ai-bottom-box{min-height:auto;border-radius:14px;border-width:2.5px;animation:mediaPlaceholderDark 2.4s ease-in-out infinite alternate;}
             .ai-layout{gap:12px;padding-bottom:80px;}
             .ai-bottom-row{grid-template-columns:1fr;gap:12px;}
-            #detail4{--animation-gap:clamp(8px,2.6vw,12px);padding:var(--animation-gap) var(--animation-gap) calc(68px + var(--animation-gap));overflow-y:auto;justify-content:flex-start;}
+            /* ★ 修复：左右内边距与 .detail-page 的 10px 对齐 */
+            #detail4{--animation-gap:clamp(8px,2.6vw,12px);padding:var(--animation-gap) 10px calc(68px + var(--animation-gap));overflow-y:auto;justify-content:flex-start;}
             .animation-video-layout{height:auto;min-height:auto;grid-template-columns:1fr;gap:var(--animation-gap);padding:0;}
             .animation-video-card{height:auto;min-height:auto;aspect-ratio:var(--video-ratio,16/9);border-radius:12px;}
             .animation-video-card video{object-fit:contain;}
@@ -1176,19 +1181,37 @@
             theaterOverlay.addEventListener("click", e => { if (e.target === theaterOverlay) closeTheaterMode(); });
             document.addEventListener("keydown", e => { if (e.key === "Escape" && theaterActive) closeTheaterMode(); });
 
-            function bindAnimationCards(root) { root.querySelectorAll(".animation-video-card").forEach(card => { const video = card.querySelector("video");
-                    video.addEventListener("loadedmetadata", () => { applyAnimationVideoRatio(video);
-                        setAnimationCoverFrame(video); }, { once: true });
-                    video.addEventListener("webkitendfullscreen", () => { video.muted = true;
+            /* ★ 修复：bindAnimationCards 里先判断 readyState，避免元数据已加载时漏写 --video-ratio */
+            function bindAnimationCards(root) {
+                root.querySelectorAll(".animation-video-card").forEach(card => {
+                    const video = card.querySelector("video");
+                    const onMeta = () => {
+                        applyAnimationVideoRatio(video);
+                        setAnimationCoverFrame(video);
+                    };
+                    // 元数据可能已经加载完了，先补一次
+                    if (video.readyState >= 1) onMeta();
+                    else video.addEventListener("loadedmetadata", onMeta, { once: true });
+
+                    video.addEventListener("webkitendfullscreen", () => {
+                        video.muted = true;
                         video.volume = 0;
                         video.controls = false;
-                        setAnimationCoverFrame(video); });
-                    card.addEventListener("click", () => { hydrateLazyVideos(card, "metadata");
-                        openAnimationVideo(card.dataset.videoSrc); });
-                    card.addEventListener("keydown", e => { if (e.key !== "Enter" && e.key !== " ") return;
+                        setAnimationCoverFrame(video);
+                    });
+
+                    card.addEventListener("click", () => {
+                        hydrateLazyVideos(card, "metadata");
+                        openAnimationVideo(card.dataset.videoSrc);
+                    });
+                    card.addEventListener("keydown", e => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
                         e.preventDefault();
                         hydrateLazyVideos(card, "metadata");
-                        openAnimationVideo(card.dataset.videoSrc); }); }); }
+                        openAnimationVideo(card.dataset.videoSrc);
+                    });
+                });
+            }
             document.querySelector(".animation-modal-close").addEventListener("click", e => { e.preventDefault();
                 e.stopPropagation();
                 closeAnimationModal(); });
@@ -1565,7 +1588,7 @@
                 targetDetail.scrollTop = 0;
                 requestAnimationFrame(() => { targetDetail.scrollTop = 0;
                     hydrateDetailImages(targetDetail); if (id === "detail4") { hydrateLazyVideos(targetDetail, "metadata");
-                        targetDetail.querySelectorAll(".animation-video-card video").forEach(setAnimationCoverFrame); } });
+                        targetDetail.querySelectorAll(".animation-video-card video").forEach(v => { applyAnimationVideoRatio(v); setAnimationCoverFrame(v); }); } });
                 currentPage = id;
                 loopActive = false;
                 clearTimers(); if (useBodyDetailScroll) {
