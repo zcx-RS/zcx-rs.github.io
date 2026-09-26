@@ -110,11 +110,9 @@
 
         footer{flex-shrink:0;width:100%;border-top:1px solid var(--border);position:relative;overflow:hidden;height:var(--footer-height);display:flex;align-items:center;background:var(--bg);}
         .logo-scroll-wrapper{position:relative;width:100%;height:100%;overflow:hidden;display:flex;align-items:center;}
-        .logo-scroll-track{display:flex;align-items:center;white-space:nowrap;width:max-content;animation:logoScroll var(--logo-loop-duration,40s) linear infinite;will-change:transform;transform:translate3d(0,0,0);backface-visibility:hidden;contain:layout style paint;}
+        /* ★ 优化：移除 CSS animation，改由 JS rAF 驱动 transform */
+        .logo-scroll-track{display:flex;align-items:center;white-space:nowrap;width:max-content;will-change:transform;transform:translate3d(0,0,0);}
         .logo-scroll-group{display:flex;align-items:center;gap:var(--logo-gap);padding:0 calc(var(--logo-gap) / 2);flex:none;}
-        .logo-scroll-wrapper:hover .logo-scroll-track{animation-play-state:paused;}
-        .page1.home-away .logo-scroll-track{animation-play-state:paused;}
-        @keyframes logoScroll{from{transform:translate3d(0,0,0);}to{transform:translate3d(var(--logo-loop-distance,-50%),0,0);}}
         .logo-item{display:inline-flex;align-items:center;gap:10px;height:48px;flex-shrink:0;cursor:pointer;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);color:#2c2c2c;user-select:none;-webkit-tap-highlight-color:transparent;text-decoration:none;}
         .logo-item:hover{transform:scale(1.08);}
         .logo-icon-wrap{width:var(--logo-icon-size);height:var(--logo-icon-size);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
@@ -230,7 +228,6 @@
         .animation-video-card::after{content:"";position:absolute;left:50%;top:50%;width:0;height:0;border-top:clamp(11px,1.2vw,15px) solid transparent;border-bottom:clamp(11px,1.2vw,15px) solid transparent;border-left:clamp(17px,1.8vw,24px) solid #fff;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.28));transform:translate(calc(-50% + 4px),-50%);transition:transform 0.25s ease;pointer-events:none;z-index:3;}
         .animation-video-card:hover::before{background:rgba(255,255,255,0.3);box-shadow:0 16px 34px rgba(0,0,0,0.32),inset 0 1px 0 rgba(255,255,255,0.68);transform:translate(-50%,-50%) scale(1.06);}
         .animation-video-card:hover::after{transform:translate(calc(-50% + 6px),-50%) scale(1.06);}
-        /* ── 通屏动画视频容器（动画制作页底部） ── */
         .animation-wide-video{width:100%;margin-top:var(--animation-gap,16px);}
         .animation-video-card--wide{width:100%;height:auto;min-height:0;aspect-ratio:var(--video-ratio,16/9);border-radius:18px;}
         .theater-fullscreen-overlay{position:fixed;inset:0;z-index:200;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.3s ease,visibility 0.3s ease;}
@@ -249,294 +246,36 @@
         .animation-modal-close:hover{background:rgba(255,140,66,0.8);transform:scale(1.06);}
         .animation-modal-close svg{width:24px;height:24px;}
 
-        /* ═══════════════════════════════════════════════════════════
-           联系方式 · FolderFloat（stage 布局 · 可拖拽版）
-           ═══════════════════════════════════════════════════════════ */
-        #detail-contact{
-            padding:0;
-            overflow:hidden;
-        }
-
-        .stage{
-            position:absolute;
-            inset:0;
-            display:grid;
-            place-items:center;
-            padding-top:clamp(3vh,8vh,12vh);
-            padding-bottom:calc(96px + var(--safe-bottom,0px));
-            box-sizing:border-box;
-        }
-
-        .stage__inner{
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            gap:clamp(18px,3vh,36px);
-        }
-
-        .stage__hint{
-            font-size:clamp(11px,1.05vw,15px);
-            letter-spacing:0.06em;
-            color:#57534e;
-            opacity:0.62;
-            text-align:center;
-            white-space:nowrap;
-            pointer-events:none;
-            user-select:none;
-        }
-
-        .folder-float{
-            position:relative;
-            width:var(--ff-w,200px);
-            height:var(--ff-h,148px);
-            -webkit-tap-highlight-color:transparent;
-            user-select:none;
-            -webkit-user-select:none;
-            isolation:isolate;
-        }
-
-        .folder-float__items{
-            position:absolute;
-            left:50%;
-            top:calc(var(--ff-h,148px) * 0.44);
-            width:0;
-            height:0;
-            z-index:3;
-        }
-
-        .folder-float__item{
-            position:absolute;
-            left:0;
-            top:0;
-            display:inline-flex;
-            align-items:center;
-            justify-content:center;
-            padding:calc(9px * var(--ff-scale,1)) calc(16px * var(--ff-scale,1));
-            border:0;
-            border-radius:999px;
-            background:var(--ff-item,#fafaf9);
-            color:var(--ff-item-ink,#1c1917);
-            font:inherit;
-            font-size:calc(13px * var(--ff-scale,1));
-            font-weight:500;
-            letter-spacing:-0.01em;
-            line-height:1.25;
-            white-space:nowrap;
-            cursor:pointer;
-            touch-action:none;
-            pointer-events:none;
-            opacity:0;
-            transform:translate3d(-50%,0,0) scale(0.4);
-            transform-origin:50% 50%;
-            will-change:transform;
-            box-shadow:
-                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
-                0 calc(6px * var(--ff-scale,1)) calc(14px * var(--ff-scale,1))
-                  calc(-6px * var(--ff-scale,1)) rgba(0,0,0,0.28);
-            transition:
-                transform var(--ff-close,240ms) var(--ff-close-ease,ease)
-                  calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),
-                opacity calc(var(--ff-close,240ms) * 0.8) ease
-                  calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),
-                color 240ms ease,
-                box-shadow 200ms ease;
-        }
-
-        .folder-float[data-open] .folder-float__item{
-            opacity:1;
-            pointer-events:auto;
-            transform:translate3d(
-                calc(-50% + var(--x,0px)),
-                var(--y,0px),
-                0
-            ) rotate(var(--r,0deg)) scale(1);
-            transition:
-                transform var(--ff-open,540ms) var(--ff-open-ease,ease)
-                  calc(var(--i,0) * var(--ff-stagger,34ms)),
-                opacity calc(var(--ff-open,540ms) * 0.55) ease
-                  calc(var(--i,0) * var(--ff-stagger,34ms)),
-                color 240ms ease,
-                box-shadow 200ms ease;
-        }
-
-        .folder-float[data-live] .folder-float__item{
-            transition:color 240ms ease,box-shadow 200ms ease;
-        }
-
-        .folder-float__item[data-dragging]{
-            transition:none!important;
-            z-index:10;
-            cursor:grabbing;
-            box-shadow:
-                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
-                0 calc(22px * var(--ff-scale,1)) calc(38px * var(--ff-scale,1))
-                  calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.5);
-        }
-
-        .folder-float__item[data-copied="ok"]{
-            background:var(--ff-item,#fafaf9);
-            color:rgb(255,140,66);
-        }
-
-        .folder-float__item[data-copied="fail"]{
-            background:var(--ff-item,#fafaf9);
-            color:#dc2626;
-        }
-
-        @media (hover: hover){
-            .folder-float__item:not([data-dragging]):hover{
-                box-shadow:
-                    inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),
-                    0 calc(14px * var(--ff-scale,1)) calc(26px * var(--ff-scale,1))
-                      calc(-10px * var(--ff-scale,1)) rgba(0,0,0,0.42);
-            }
-        }
-
-        .folder-float__item:focus-visible{
-            outline:2px solid #78716c;
-            outline-offset:3px;
-        }
-
-        .folder-float__item:not([data-dragging]):active{
-            transform:translate3d(
-                calc(-50% + var(--x,0px)),
-                var(--y,0px),
-                0
-            ) rotate(var(--r,0deg)) scale(0.96);
-        }
-
-        .folder-float__drift{
-            display:block;
-            pointer-events:none;
-        }
-
-        .folder-float__item[data-pop] .folder-float__drift{
-            animation:ff-pop 380ms cubic-bezier(0.34,1.3,0.5,1);
-        }
-
-        @keyframes ff-pop{
-            0%   { transform:scale(1)    rotate(0deg); }
-            32%  { transform:scale(1.18) rotate(-1.6deg); }
-            62%  { transform:scale(0.955) rotate(0.9deg); }
-            82%  { transform:scale(1.03) rotate(-0.4deg); }
-            100% { transform:scale(1)    rotate(0deg); }
-        }
-
-        .folder-float__folder{
-            position:absolute;
-            inset:0;
-            z-index:2;
-            perspective:calc(1100px * var(--ff-scale,1));
-            perspective-origin:50% 30%;
-        }
-
-        .folder-float__back{
-            position:absolute;
-            left:0;
-            right:0;
-            top:calc(var(--ff-h,148px) * 0.3);
-            bottom:0;
-            background:var(--ff-back,#44403c);
-            border-radius:var(--ff-r,14px);
-            box-shadow:0 calc(24px * var(--ff-scale,1)) calc(44px * var(--ff-scale,1))
-                calc(-22px * var(--ff-scale,1)) rgba(0,0,0,0.42);
-        }
-
-        .folder-float__back::before{
-            content:'';
-            position:absolute;
-            left:calc(var(--ff-w,200px) * 0.07);
-            top:calc(-13px * var(--ff-scale,1));
-            width:calc(var(--ff-w,200px) * 0.38);
-            height:calc(14px * var(--ff-scale,1));
-            background:var(--ff-back,#44403c);
-            border-radius:
-                calc(8px * var(--ff-scale,1))
-                calc(12px * var(--ff-scale,1)) 0 0;
-        }
-
-        .folder-float__paper{
-            position:absolute;
-            left:calc(11px * var(--ff-scale,1));
-            right:calc(11px * var(--ff-scale,1));
-            top:calc(var(--ff-h,148px) * 0.26);
-            bottom:calc(12px * var(--ff-scale,1));
-            background:var(--ff-paper,#e7e5e4);
-            border-radius:calc(10px * var(--ff-scale,1));
-            transform-origin:50% 100%;
-            transform:translateY(calc(10px * var(--ff-scale,1))) scale(0.94);
-            transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease) 30ms;
-            box-shadow:0 calc(-3px * var(--ff-scale,1)) calc(10px * var(--ff-scale,1))
-                rgba(0,0,0,0.1);
-        }
-
-        .folder-float[data-open] .folder-float__paper{
-            transform:translateY(calc(-2px * var(--ff-scale,1))) scale(1);
-            transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 20ms;
-        }
-
-        .folder-float__front{
-            position:absolute;
-            left:0;
-            right:0;
-            top:calc(var(--ff-h,148px) * 0.46);
-            bottom:0;
-            display:flex;
-            flex-direction:column;
-            align-items:flex-start;
-            justify-content:center;
-            gap:calc(2px * var(--ff-scale,1));
-            padding:calc(12px * var(--ff-scale,1)) calc(18px * var(--ff-scale,1));
-            background:var(--ff-front,#57534e);
-            border-radius:var(--ff-r,14px);
-            transform-origin:50% 100%;
-            transform:rotateX(calc(var(--ff-rest,16deg) * -1));
-            transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease);
-            box-shadow:
-                inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.14),
-                0 calc(16px * var(--ff-scale,1)) calc(28px * var(--ff-scale,1))
-                  calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.38);
-        }
-
-        .folder-float[data-open] .folder-float__front{
-            transform:rotateX(calc(var(--ff-angle,34deg) * -1));
-            transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 60ms;
-        }
-
-        .folder-float__label{
-            font-size:calc(13px * var(--ff-scale,1));
-            font-weight:600;
-            line-height:1.2;
-            letter-spacing:-0.01em;
-            color:var(--ff-label,#fafaf9);
-        }
-
-        .folder-float__sub{
-            font-size:calc(11px * var(--ff-scale,1));
-            font-weight:500;
-            line-height:1.2;
-            color:var(--ff-label,#fafaf9);
-            opacity:0.55;
-        }
-
-        .folder-float__trigger{
-            position:absolute;
-            inset:0;
-            z-index:5;
-            margin:0;
-            padding:0;
-            border:0;
-            border-radius:var(--ff-r,14px);
-            background:transparent;
-            cursor:pointer;
-            appearance:none;
-            -webkit-appearance:none;
-        }
-
-        .folder-float__trigger:focus-visible{
-            outline:2px solid #78716c;
-            outline-offset:3px;
-        }
+        /* ═══════════════ 联系方式 FolderFloat ═══════════════ */
+        #detail-contact{padding:0;overflow:hidden;}
+        .stage{position:absolute;inset:0;display:grid;place-items:center;padding-top:clamp(3vh,8vh,12vh);padding-bottom:calc(96px + var(--safe-bottom,0px));box-sizing:border-box;}
+        .stage__inner{display:flex;flex-direction:column;align-items:center;gap:clamp(18px,3vh,36px);}
+        .stage__hint{font-size:clamp(11px,1.05vw,15px);letter-spacing:0.06em;color:#57534e;opacity:0.62;text-align:center;white-space:nowrap;pointer-events:none;user-select:none;}
+        .folder-float{position:relative;width:var(--ff-w,200px);height:var(--ff-h,148px);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;isolation:isolate;}
+        .folder-float__items{position:absolute;left:50%;top:calc(var(--ff-h,148px) * 0.44);width:0;height:0;z-index:3;}
+        .folder-float__item{position:absolute;left:0;top:0;display:inline-flex;align-items:center;justify-content:center;padding:calc(9px * var(--ff-scale,1)) calc(16px * var(--ff-scale,1));border:0;border-radius:999px;background:var(--ff-item,#fafaf9);color:var(--ff-item-ink,#1c1917);font:inherit;font-size:calc(13px * var(--ff-scale,1));font-weight:500;letter-spacing:-0.01em;line-height:1.25;white-space:nowrap;cursor:pointer;touch-action:none;pointer-events:none;opacity:0;transform:translate3d(-50%,0,0) scale(0.4);transform-origin:50% 50%;will-change:transform;box-shadow:inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),0 calc(6px * var(--ff-scale,1)) calc(14px * var(--ff-scale,1)) calc(-6px * var(--ff-scale,1)) rgba(0,0,0,0.28);transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease) calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),opacity calc(var(--ff-close,240ms) * 0.8) ease calc((var(--ff-count,5) - var(--i,0)) * var(--ff-stagger-close,20ms)),color 240ms ease,box-shadow 200ms ease;}
+        .folder-float[data-open] .folder-float__item{opacity:1;pointer-events:auto;transform:translate3d(calc(-50% + var(--x,0px)),var(--y,0px),0) rotate(var(--r,0deg)) scale(1);transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) calc(var(--i,0) * var(--ff-stagger,34ms)),opacity calc(var(--ff-open,540ms) * 0.55) ease calc(var(--i,0) * var(--ff-stagger,34ms)),color 240ms ease,box-shadow 200ms ease;}
+        .folder-float[data-live] .folder-float__item{transition:color 240ms ease,box-shadow 200ms ease;}
+        .folder-float__item[data-dragging]{transition:none!important;z-index:10;cursor:grabbing;box-shadow:inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),0 calc(22px * var(--ff-scale,1)) calc(38px * var(--ff-scale,1)) calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.5);}
+        .folder-float__item[data-copied="ok"]{background:var(--ff-item,#fafaf9);color:rgb(255,140,66);}
+        .folder-float__item[data-copied="fail"]{background:var(--ff-item,#fafaf9);color:#dc2626;}
+        @media (hover: hover){.folder-float__item:not([data-dragging]):hover{box-shadow:inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.7),0 calc(14px * var(--ff-scale,1)) calc(26px * var(--ff-scale,1)) calc(-10px * var(--ff-scale,1)) rgba(0,0,0,0.42);}}
+        .folder-float__item:focus-visible{outline:2px solid #78716c;outline-offset:3px;}
+        .folder-float__item:not([data-dragging]):active{transform:translate3d(calc(-50% + var(--x,0px)),var(--y,0px),0) rotate(var(--r,0deg)) scale(0.96);}
+        .folder-float__drift{display:block;pointer-events:none;}
+        .folder-float__item[data-pop] .folder-float__drift{animation:ff-pop 380ms cubic-bezier(0.34,1.3,0.5,1);}
+        @keyframes ff-pop{0%{transform:scale(1) rotate(0deg);}32%{transform:scale(1.18) rotate(-1.6deg);}62%{transform:scale(0.955) rotate(0.9deg);}82%{transform:scale(1.03) rotate(-0.4deg);}100%{transform:scale(1) rotate(0deg);}}
+        .folder-float__folder{position:absolute;inset:0;z-index:2;perspective:calc(1100px * var(--ff-scale,1));perspective-origin:50% 30%;}
+        .folder-float__back{position:absolute;left:0;right:0;top:calc(var(--ff-h,148px) * 0.3);bottom:0;background:var(--ff-back,#44403c);border-radius:var(--ff-r,14px);box-shadow:0 calc(24px * var(--ff-scale,1)) calc(44px * var(--ff-scale,1)) calc(-22px * var(--ff-scale,1)) rgba(0,0,0,0.42);}
+        .folder-float__back::before{content:'';position:absolute;left:calc(var(--ff-w,200px) * 0.07);top:calc(-13px * var(--ff-scale,1));width:calc(var(--ff-w,200px) * 0.38);height:calc(14px * var(--ff-scale,1));background:var(--ff-back,#44403c);border-radius:calc(8px * var(--ff-scale,1)) calc(12px * var(--ff-scale,1)) 0 0;}
+        .folder-float__paper{position:absolute;left:calc(11px * var(--ff-scale,1));right:calc(11px * var(--ff-scale,1));top:calc(var(--ff-h,148px) * 0.26);bottom:calc(12px * var(--ff-scale,1));background:var(--ff-paper,#e7e5e4);border-radius:calc(10px * var(--ff-scale,1));transform-origin:50% 100%;transform:translateY(calc(10px * var(--ff-scale,1))) scale(0.94);transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease) 30ms;box-shadow:0 calc(-3px * var(--ff-scale,1)) calc(10px * var(--ff-scale,1)) rgba(0,0,0,0.1);}
+        .folder-float[data-open] .folder-float__paper{transform:translateY(calc(-2px * var(--ff-scale,1))) scale(1);transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 20ms;}
+        .folder-float__front{position:absolute;left:0;right:0;top:calc(var(--ff-h,148px) * 0.46);bottom:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:calc(2px * var(--ff-scale,1));padding:calc(12px * var(--ff-scale,1)) calc(18px * var(--ff-scale,1));background:var(--ff-front,#57534e);border-radius:var(--ff-r,14px);transform-origin:50% 100%;transform:rotateX(calc(var(--ff-rest,16deg) * -1));transition:transform var(--ff-close,240ms) var(--ff-close-ease,ease);box-shadow:inset 0 calc(1px * var(--ff-scale,1)) 0 rgba(255,255,255,0.14),0 calc(16px * var(--ff-scale,1)) calc(28px * var(--ff-scale,1)) calc(-14px * var(--ff-scale,1)) rgba(0,0,0,0.38);}
+        .folder-float[data-open] .folder-float__front{transform:rotateX(calc(var(--ff-angle,34deg) * -1));transition:transform var(--ff-open,540ms) var(--ff-open-ease,ease) 60ms;}
+        .folder-float__label{font-size:calc(13px * var(--ff-scale,1));font-weight:600;line-height:1.2;letter-spacing:-0.01em;color:var(--ff-label,#fafaf9);}
+        .folder-float__sub{font-size:calc(11px * var(--ff-scale,1));font-weight:500;line-height:1.2;color:var(--ff-label,#fafaf9);opacity:0.55;}
+        .folder-float__trigger{position:absolute;inset:0;z-index:5;margin:0;padding:0;border:0;border-radius:var(--ff-r,14px);background:transparent;cursor:pointer;appearance:none;-webkit-appearance:none;}
+        .folder-float__trigger:focus-visible{outline:2px solid #78716c;outline-offset:3px;}
 
         @media(max-width:1024px){.cards-grid{grid-template-columns:repeat(2,1fr);}.cards-row{grid-template-columns:repeat(2,1fr);}}
         @media (min-width:769px) and (max-width:1100px){
@@ -573,47 +312,14 @@
             .nav-links a:hover{transform:none;}
             .nav-links a:active{transform:scale(0.92);color:var(--accent);}
             main{flex:1 1 auto;min-height:0;justify-content:center;gap:clamp(1rem,3.6vh,1.65rem);padding:0 20px 8px;}
-            
-            .hero-title{
-                width: 100%;               
-                margin: 0 auto;
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                align-items: center;
-                gap: 0.15em;
-                white-space: nowrap;       
-                font-size: clamp(1.8rem, 8.5vw, 3.2rem);
-                line-height: 1.1;
-                text-align: center;
-                transform: translateX(0) translateZ(0)!important;
-                will-change: auto;
-                transition: transform 0.1s ease-out;
-            }
-            .hero-title > span {
-                display: inline-block;
-                width: auto;
-                text-align: center;
-            }
-            .hero-title .dot-text {
-                display: inline-block;
-                width: auto;
-                text-align: center;
-                justify-content: center;
-                font-size: inherit;
-                color: #111;
-                word-break: keep-all;
-            }
-            .middle-dot{
-                margin: 0 0.1em;
-                display: inline-block;
-            }
-
+            .hero-title{width:100%;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:0.15em;white-space:nowrap;font-size:clamp(1.8rem,8.5vw,3.2rem);line-height:1.1;text-align:center;transform:translateX(0) translateZ(0)!important;will-change:auto;transition:transform 0.1s ease-out;}
+            .hero-title > span{display:inline-block;width:auto;text-align:center;}
+            .hero-title .dot-text{display:inline-block;width:auto;text-align:center;justify-content:center;font-size:inherit;color:#111;word-break:keep-all;}
+            .middle-dot{margin:0 0.1em;display:inline-block;}
             .hero-desc{width:min(100%,360px);max-width:none;grid-template-columns:1fr;gap:14px;padding-top:18px;text-align:center;font-size:clamp(0.86rem,3.7vw,1rem);line-height:1.55;}
             .hero-desc::before{left:0;width:100%;}
             .hero-desc div{margin:0;text-align:center;justify-self:center;white-space:normal;}
             footer{flex-shrink:0;height:var(--footer-height);min-height:70px;}
-            .logo-scroll-track{animation-duration:var(--logo-loop-duration,32s);}
             .logo-item{height:36px;gap:7px;}
             .logo-name{font-size:0.78rem;}
             .logo-scroll-wrapper::before,.logo-scroll-wrapper::after{width:36px;}
@@ -670,89 +376,14 @@
             #detail-contact{padding:0;justify-content:center;}
         }
 
-        /* ═══════════════════════════════════════════════════════════
-           联系方式页 · 页脚居中返回按钮
-           ═══════════════════════════════════════════════════════════ */
-        #detail-contact .back-btn--ghost{
-            position:fixed;
-            left:50%;
-            bottom:calc(clamp(18px,3.6vh,34px) + var(--safe-bottom));
-            top:auto;
-            right:auto;
-            width:auto;
-            height:auto;
-            min-height:44px;
-            padding:12px 22px;
-            gap:8px;
-            font-size:13.5px;
-            font-weight:500;
-            letter-spacing:0.02em;
-            text-transform:none;
-            color:#fafaf9;
-            background:rgba(68,64,60,0.86);
-            backdrop-filter:blur(12px) saturate(1.25);
-            -webkit-backdrop-filter:blur(12px) saturate(1.25);
-            border:none;
-            border-top:none;
-            border-radius:999px;
-            box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.18),
-                0 -6px 24px -10px rgba(0,0,0,0.5),
-                0 8px 22px -12px rgba(0,0,0,0.45);
-            transform:translateX(-50%);
-            transition:
-                background 220ms ease,
-                transform 260ms cubic-bezier(0.34,1.2,0.5,1),
-                box-shadow 260ms ease;
-            animation:contact-back-in 460ms 160ms cubic-bezier(0.22,1,0.36,1) backwards;
-        }
-
+        #detail-contact .back-btn--ghost{position:fixed;left:50%;bottom:calc(clamp(18px,3.6vh,34px) + var(--safe-bottom));top:auto;right:auto;width:auto;height:auto;min-height:44px;padding:12px 22px;gap:8px;font-size:13.5px;font-weight:500;letter-spacing:0.02em;text-transform:none;color:#fafaf9;background:rgba(68,64,60,0.86);backdrop-filter:blur(12px) saturate(1.25);-webkit-backdrop-filter:blur(12px) saturate(1.25);border:none;border-top:none;border-radius:999px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),0 -6px 24px -10px rgba(0,0,0,0.5),0 8px 22px -12px rgba(0,0,0,0.45);transform:translateX(-50%);transition:background 220ms ease,transform 260ms cubic-bezier(0.34,1.2,0.5,1),box-shadow 260ms ease;animation:contact-back-in 460ms 160ms cubic-bezier(0.22,1,0.36,1) backwards;}
         #detail-contact .back-btn--ghost .back-btn-content{gap:8px;}
-
-        #detail-contact .back-btn--ghost .back-arrow{
-            width:14px;
-            height:14px;
-            padding:0;
-            border-radius:0;
-            background:transparent;
-            color:currentColor;
-            box-shadow:none;
-            transition:transform 260ms cubic-bezier(0.34,1.2,0.5,1);
-        }
-
-        #detail-contact .back-btn--ghost:hover{
-            color:#fafaf9;
-            background:rgba(41,37,36,0.96);
-            letter-spacing:0.02em;
-            transform:translateX(-50%);
-            box-shadow:
-                inset 0 1px 0 rgba(255,255,255,0.22),
-                0 -8px 28px -10px rgba(0,0,0,0.55),
-                0 12px 28px -12px rgba(0,0,0,0.6);
-        }
-
-        #detail-contact .back-btn--ghost:hover .back-arrow{
-            transform:translateX(-2px);
-            box-shadow:none;
-        }
-
+        #detail-contact .back-btn--ghost .back-arrow{width:14px;height:14px;padding:0;border-radius:0;background:transparent;color:currentColor;box-shadow:none;transition:transform 260ms cubic-bezier(0.34,1.2,0.5,1);}
+        #detail-contact .back-btn--ghost:hover{color:#fafaf9;background:rgba(41,37,36,0.96);letter-spacing:0.02em;transform:translateX(-50%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.22),0 -8px 28px -10px rgba(0,0,0,0.55),0 12px 28px -12px rgba(0,0,0,0.6);}
+        #detail-contact .back-btn--ghost:hover .back-arrow{transform:translateX(-2px);box-shadow:none;}
         #detail-contact .back-btn--ghost:active{transform:translateX(-50%) scale(0.96);}
-
-        @keyframes contact-back-in{
-            from{opacity:0;transform:translate(-50%,14px);}
-            to  {opacity:1;transform:translate(-50%,0);}
-        }
-
-        @media(max-width:600px){
-            #detail-contact .back-btn--ghost{
-                padding:12px 20px;
-                font-size:13px;
-                min-width:44px;
-                justify-content:center;
-            }
-            #detail-contact .back-btn--ghost .back-btn-text{display:none;}
-        }
-
+        @keyframes contact-back-in{from{opacity:0;transform:translate(-50%,14px);}to{opacity:1;transform:translate(-50%,0);}}
+        @media(max-width:600px){#detail-contact .back-btn--ghost{padding:12px 20px;font-size:13px;min-width:44px;justify-content:center;}#detail-contact .back-btn--ghost .back-btn-text{display:none;}}
         @media(prefers-reduced-motion:reduce){
             html.home-scroll-snap{scroll-behavior:auto;}
             .minimal-card::before,#loading-overlay .load-dots span{animation-duration:1ms!important;animation-iteration-count:1!important;}
@@ -826,7 +457,6 @@
         <button class="back-btn" type="button"><span class="back-btn-content"><svg class="back-arrow" viewBox="0 0 28 28" fill="none"><path d="M16 20L10 14L16 8" stroke="currentColor" stroke-width="2"></path></svg>返回作品</span></button>
     </div>
 
-    <!-- ══════════ 二级页：联系方式（新版 FolderFloat） ══════════ -->
     <div class="detail-page" id="detail-contact">
         <div class="stage">
             <div class="stage__inner">
@@ -839,14 +469,7 @@
                             <span class="folder-float__label">周成鑫</span>
                             <span class="folder-float__sub">3D渲染师</span>
                         </span>
-                        <button
-                            type="button"
-                            class="folder-float__trigger"
-                            id="contactTrigger"
-                            aria-expanded="false"
-                            aria-controls="contactItems"
-                            aria-label="周成鑫, 3D渲染师 —— 展开联系方式"
-                        ></button>
+                        <button type="button" class="folder-float__trigger" id="contactTrigger" aria-expanded="false" aria-controls="contactItems" aria-label="周成鑫, 3D渲染师 —— 展开联系方式"></button>
                     </div>
                 </div>
                 <p class="stage__hint">悬停打开 · 拖拽便签 · 点击复制</p>
@@ -855,8 +478,7 @@
         <button class="back-btn back-btn--ghost" type="button" aria-label="回到首页">
             <span class="back-btn-content">
                 <svg class="back-arrow" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <path d="M9.75 3.5 5 8l4.75 4.5" stroke="currentColor" stroke-width="1.8"
-                          stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9.75 3.5 5 8l4.75 4.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
                 <span class="back-btn-text">回到首页</span>
             </span>
@@ -864,9 +486,20 @@
     </div>
 
     <script>
-        // Logo 无限滚动
+        /* ══════════════════════════════════════════════════════════════
+           Logo 无限滚动 · rAF 驱动版
+           优化点：
+           1. 用 requestAnimationFrame 累加 transform，不再重启 CSS animation
+           2. 帧率无关的速度（px/s），与浏览器刷新率解耦
+           3. 悬停/滚走暂停通过标志位控制，不改变 animation-play-state
+           4. resize 只重测宽度，不重启动画
+           ══════════════════════════════════════════════════════════════ */
         (function initLogoScroll() {
             const track = document.getElementById('logoScrollTrack');
+            if (!track) return;
+            const wrapper = track.parentElement;
+            const page1 = document.getElementById('page1');
+
             const iconList = [
                 {
                     name: 'Cinema 4D',
@@ -940,27 +573,130 @@
                 iconList.forEach(icon => group.appendChild(createIconItem(icon)));
                 return group;
             }
+
             track.replaceChildren(createLogoGroup(false), createLogoGroup(true));
 
-            let measureFrame = 0;
-            const updateLoopMetrics = () => {
-                cancelAnimationFrame(measureFrame);
-                measureFrame = requestAnimationFrame(() => {
-                    const firstGroup = track.firstElementChild;
-                    if (!firstGroup) return;
-                    const distance = firstGroup.getBoundingClientRect().width;
-                    if (!distance) return;
-                    const requiredGroups = Math.max(2, Math.ceil(window.innerWidth / distance) + 2);
-                    while (track.children.length < requiredGroups) track.appendChild(createLogoGroup(true));
-                    while (track.children.length > requiredGroups) track.lastElementChild.remove();
-                    const pixelsPerSecond = matchMedia('(max-width: 768px)').matches ? 42 : 48;
-                    track.style.setProperty('--logo-loop-distance', `${-distance}px`);
-                    track.style.setProperty('--logo-loop-duration', `${Math.max(18, distance / pixelsPerSecond)}s`);
+            const mq = window.matchMedia('(max-width: 768px)');
+            const hoverQuery = window.matchMedia('(hover: hover)');
+
+            let groupWidth = 0;
+            let offset = 0;
+            let lastTime = 0;
+            let rafId = 0;
+            let running = false;
+            let userHovering = false;
+            let pageAway = false;
+            let docHidden = document.hidden;
+
+            function getSpeed() {
+                return mq.matches ? 42 : 48;   // px / s
+            }
+
+            function measure() {
+                const firstGroup = track.firstElementChild;
+                if (!firstGroup) return;
+                const w = firstGroup.getBoundingClientRect().width;
+                if (!w || w < 10) return;
+
+                const requiredGroups = Math.max(2, Math.ceil(window.innerWidth / w) + 2);
+                while (track.children.length < requiredGroups) {
+                    track.appendChild(createLogoGroup(true));
+                }
+                while (track.children.length > requiredGroups && track.children.length > 2) {
+                    track.lastElementChild.remove();
+                }
+
+                groupWidth = w;
+                // 把 offset 规整到合法区间，避免跳变
+                while (-offset >= groupWidth) offset += groupWidth;
+                while (offset > 0) offset -= groupWidth;
+                track.style.transform = 'translate3d(' + offset.toFixed(1) + 'px,0,0)';
+            }
+
+            function tick(now) {
+                if (!running) return;
+
+                const shouldUpdate = !userHovering && !pageAway && !docHidden && groupWidth > 0;
+
+                if (shouldUpdate) {
+                    if (!lastTime) lastTime = now;
+                    let dt = now - lastTime;
+                    lastTime = now;
+                    // 后台切回 / 长时间暂停时防止跳跃
+                    if (dt > 100) dt = 16;
+                    if (dt < 0) dt = 0;
+
+                    offset -= getSpeed() * dt / 1000;
+                    if (-offset >= groupWidth) offset += groupWidth;
+
+                    track.style.transform = 'translate3d(' + offset.toFixed(1) + 'px,0,0)';
+                } else {
+                    lastTime = 0;
+                }
+
+                rafId = requestAnimationFrame(tick);
+            }
+
+            function start() {
+                if (running) return;
+                running = true;
+                lastTime = 0;
+                rafId = requestAnimationFrame(tick);
+            }
+
+            function stop() {
+                if (!running) return;
+                running = false;
+                cancelAnimationFrame(rafId);
+                rafId = 0;
+            }
+
+            /* 悬停暂停（仅桌面） */
+            if (hoverQuery.matches && wrapper) {
+                wrapper.addEventListener('pointerenter', () => { userHovering = true; });
+                wrapper.addEventListener('pointerleave', () => { userHovering = false; lastTime = 0; });
+            }
+
+            /* 首页滚走时暂停（观察 home-away class） */
+            if (page1 && 'MutationObserver' in window) {
+                const mo = new MutationObserver(() => {
+                    const away = page1.classList.contains('home-away');
+                    if (away !== pageAway) {
+                        pageAway = away;
+                        if (!pageAway) lastTime = 0;
+                    }
                 });
-            };
-            updateLoopMetrics();
-            if ('ResizeObserver' in window) new ResizeObserver(updateLoopMetrics).observe(track.firstElementChild);
-            window.addEventListener('resize', updateLoopMetrics, { passive: true });
+                mo.observe(page1, { attributes: true, attributeFilter: ['class'] });
+            }
+
+            /* 页面可见性 */
+            document.addEventListener('visibilitychange', () => {
+                docHidden = document.hidden;
+                if (!docHidden) lastTime = 0;
+            });
+
+            /* resize 只重新测量，不重启动画 */
+            let resizeRaf = 0;
+            window.addEventListener('resize', () => {
+                cancelAnimationFrame(resizeRaf);
+                resizeRaf = requestAnimationFrame(() => {
+                    measure();
+                    lastTime = 0;
+                });
+            }, { passive: true });
+
+            /* 初始化：等字体加载完再测宽 */
+            const ready = (document.fonts && document.fonts.ready)
+                ? document.fonts.ready
+                : Promise.resolve();
+
+            ready.then(() => {
+                measure();
+                requestAnimationFrame(() => {
+                    measure();
+                    start();
+                });
+            });
         })();
     </script>
     <script>
@@ -1105,15 +841,7 @@
 
             function setActive(element, active) { element.classList.toggle("active", active); }
 
-            /* ──────────────────────────────────────────────────────────
-               加载动画 · 优化版
-               优化点：
-               1. 路径几何预计算：把与 scale 无关的 x / (curve+wave) 一次性算好
-               2. 每帧只做一次"乘加"得到 y，省掉 360 次 Math.pow/sin/sqrt
-               3. 字符串单次拼接替代 Array + join，减少 GC
-               4. 粒子循环用 for 替代 forEach，去掉闭包开销
-               5. 预计算常量（xLimit / waveBFreq / 粒子索引倒数）
-               ────────────────────────────────────────────────────────── */
+            /* 加载动画 · 优化版（预计算路径几何） */
             const HEART_ROOT = 3.3;
             const heartConfig = {
                 particleCount: isMobile() ? 40 : 64,
@@ -1153,7 +881,6 @@
             const loadParticleMax = Math.max(1, heartConfig.particleCount - 1);
             const loadParticleInvMax = 1 / loadParticleMax;
 
-            // 预计算路径几何（与 scale 无关的部分）
             const pathX  = new Float32Array(loadPathSteps + 1);
             const pathCW = new Float32Array(loadPathSteps + 1);
             {
@@ -1181,7 +908,6 @@
                 const scale = getDetailScale(time);
                 const yScale = heartConfig.heartWaveScaleY + scale * 1.5;
 
-                // 路径：单次拼接，避免数组分配 + join
                 let d = '';
                 for (let i = 0; i <= loadPathSteps; i++) {
                     const y = 18 + (1.75 - pathCW[i]) * yScale;
@@ -1189,7 +915,6 @@
                 }
                 loadPath.setAttribute('d', d);
 
-                // 粒子：for 循环 + 预计算常量
                 const progress = (time % heartConfig.durationMs) / heartConfig.durationMs;
                 const trail = heartConfig.trailSpan;
                 const n = loadParticles.length;
@@ -2049,7 +1774,6 @@
         })();
     </script>
 
-    <!-- ══════════ 联系方式 · FolderFloat 交互脚本（可拖拽版 · 优化） ══════════ -->
     <script>
     (function () {
       'use strict';
@@ -2423,7 +2147,7 @@
         try { d.pill.el.releasePointerCapture(d.pointerId); } catch (err) {}
       }
 
-      /* 拖拽监听器只绑定一次，避免每次拖拽 add/remove */
+      /* 拖拽监听器只绑定一次 */
       window.addEventListener('pointermove', onDragMove, { passive: true });
       window.addEventListener('pointerup', endDrag);
       window.addEventListener('pointercancel', endDrag);
@@ -2520,7 +2244,6 @@
           p.vx *= damp; p.vy *= damp;
           if (p.pushed > 0) p.pushed -= dt;
 
-          // 静止检测：接近家位置时跳过摆动计算
           var isStill = Math.abs(p.vx) + Math.abs(p.vy) < 0.01 &&
                         Math.abs(p.x - p.homeX) + Math.abs(p.y - p.homeY) < 0.3 &&
                         p.pushed <= 0;
