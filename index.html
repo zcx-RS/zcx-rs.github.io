@@ -1105,24 +1105,111 @@
 
             function setActive(element, active) { element.classList.toggle("active", active); }
 
-            const heartConfig = { particleCount: isMobile() ? 40 : 64, trailSpan: 0.22, durationMs: isMobile() ? 6000 : 8400, pulseDurationMs: isMobile() ? 4000 : 5600, strokeWidth: 3.9, heartWaveB: 6.4, heartWaveRoot: 3.3, heartWaveAmp: 0.9, heartWaveScaleX: 23.2, heartWaveScaleY: 24.5, point(progress, scale) { const xLimit = Math.sqrt(this.heartWaveRoot); const x = -xLimit + progress * xLimit * 2; const safeRoot = Math.max(0, this.heartWaveRoot - x * x); const wave = this.heartWaveAmp * Math.sqrt(safeRoot) * Math.sin(this.heartWaveB * Math.PI * x); const curve = Math.pow(Math.abs(x), 2 / 3); return { x: 50 + x * this.heartWaveScaleX, y: 18 + (1.75 - (curve + wave)) * (this.heartWaveScaleY + scale * 1.5) }; } };
+            /* ──────────────────────────────────────────────────────────
+               加载动画 · 优化版
+               优化点：
+               1. 路径几何预计算：把与 scale 无关的 x / (curve+wave) 一次性算好
+               2. 每帧只做一次"乘加"得到 y，省掉 360 次 Math.pow/sin/sqrt
+               3. 字符串单次拼接替代 Array + join，减少 GC
+               4. 粒子循环用 for 替代 forEach，去掉闭包开销
+               5. 预计算常量（xLimit / waveBFreq / 粒子索引倒数）
+               ────────────────────────────────────────────────────────── */
+            const HEART_ROOT = 3.3;
+            const heartConfig = {
+                particleCount: isMobile() ? 40 : 64,
+                trailSpan: 0.22,
+                durationMs: isMobile() ? 6000 : 8400,
+                pulseDurationMs: isMobile() ? 4000 : 5600,
+                strokeWidth: 3.9,
+                heartWaveB: 6.4,
+                heartWaveRoot: HEART_ROOT,
+                heartWaveAmp: 0.9,
+                heartWaveScaleX: 23.2,
+                heartWaveScaleY: 24.5,
+                xLimit: Math.sqrt(HEART_ROOT),
+                waveBFreq: 6.4 * Math.PI,
+                point(progress, scale) {
+                    const x = -this.xLimit + progress * this.xLimit * 2;
+                    const safeRoot = Math.max(0, this.heartWaveRoot - x * x);
+                    const wave = this.heartWaveAmp * Math.sqrt(safeRoot) * Math.sin(this.waveBFreq * x);
+                    const curve = Math.pow(Math.abs(x), 2 / 3);
+                    return {
+                        x: 50 + x * this.heartWaveScaleX,
+                        y: 18 + (1.75 - (curve + wave)) * (this.heartWaveScaleY + scale * 1.5)
+                    };
+                }
+            };
             loadPath.setAttribute("stroke-width", heartConfig.strokeWidth);
-            const loadParticles = Array.from({ length: heartConfig.particleCount }, () => { const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle"); circle.setAttribute("fill", "currentColor"); loadGroup.appendChild(circle); return circle; });
+
+            const loadParticles = new Array(heartConfig.particleCount);
+            for (let i = 0; i < loadParticles.length; i++) {
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("fill", "currentColor");
+                loadGroup.appendChild(circle);
+                loadParticles[i] = circle;
+            }
+
             const loadPathSteps = isMobile() ? 80 : 360;
-            const loadPathParts = new Array(loadPathSteps + 1);
             const loadParticleMax = Math.max(1, heartConfig.particleCount - 1);
-            const normalize = progress => ((progress % 1) + 1) % 1;
+            const loadParticleInvMax = 1 / loadParticleMax;
 
-            function getDetailScale(time) { const progress = (time % heartConfig.pulseDurationMs) / heartConfig.pulseDurationMs; return 0.52 + ((Math.sin(progress * Math.PI * 2 + 0.55) + 1) / 2) * 0.48; }
-            let loadingRaf, loadingStartTime = LOAD_START;
+            // 预计算路径几何（与 scale 无关的部分）
+            const pathX  = new Float32Array(loadPathSteps + 1);
+            const pathCW = new Float32Array(loadPathSteps + 1);
+            {
+                const { xLimit, heartWaveRoot, heartWaveAmp, heartWaveScaleX, waveBFreq } = heartConfig;
+                const invSteps = 1 / loadPathSteps;
+                for (let i = 0; i <= loadPathSteps; i++) {
+                    const x = -xLimit + i * invSteps * xLimit * 2;
+                    const safeRoot = Math.max(0, heartWaveRoot - x * x);
+                    const wave  = heartWaveAmp * Math.sqrt(safeRoot) * Math.sin(waveBFreq * x);
+                    const curve = Math.pow(Math.abs(x), 2 / 3);
+                    pathX[i]  = 50 + x * heartWaveScaleX;
+                    pathCW[i] = curve + wave;
+                }
+            }
 
-            function renderLoading(now) { const time = now - loadingStartTime; const scale = getDetailScale(time); for (let i = 0; i <= loadPathSteps; i++) { const point = heartConfig.point(i / loadPathSteps, scale);
-                    loadPathParts[i] = `${i === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`; } loadPath.setAttribute("d", loadPathParts.join("")); loadParticles.forEach((particle, index) => { const tail = index / loadParticleMax; const point = heartConfig.point(normalize(((time % heartConfig.durationMs) / heartConfig.durationMs) - tail * heartConfig.trailSpan), scale); const fade = Math.pow(1 - tail, 0.56);
-                    particle.setAttribute("cx", point.x.toFixed(2));
-                    particle.setAttribute("cy", point.y.toFixed(2));
-                    particle.setAttribute("r", (0.9 + fade * 2.7).toFixed(2));
-                    particle.setAttribute("opacity", (0.08 + fade * 0.9).toFixed(3)); }); loadingRaf = requestAnimationFrame(renderLoading); }
+            function getDetailScale(time) {
+                const progress = (time % heartConfig.pulseDurationMs) / heartConfig.pulseDurationMs;
+                return 0.52 + ((Math.sin(progress * Math.PI * 2 + 0.55) + 1) / 2) * 0.48;
+            }
+            let loadingRaf;
+            const loadingStartTime = LOAD_START;
+
+            function renderLoading(now) {
+                const time = now - loadingStartTime;
+                const scale = getDetailScale(time);
+                const yScale = heartConfig.heartWaveScaleY + scale * 1.5;
+
+                // 路径：单次拼接，避免数组分配 + join
+                let d = '';
+                for (let i = 0; i <= loadPathSteps; i++) {
+                    const y = 18 + (1.75 - pathCW[i]) * yScale;
+                    d += (i === 0 ? 'M' : 'L') + pathX[i].toFixed(2) + ' ' + y.toFixed(2);
+                }
+                loadPath.setAttribute('d', d);
+
+                // 粒子：for 循环 + 预计算常量
+                const progress = (time % heartConfig.durationMs) / heartConfig.durationMs;
+                const trail = heartConfig.trailSpan;
+                const n = loadParticles.length;
+                for (let i = 0; i < n; i++) {
+                    const tail = i * loadParticleInvMax;
+                    let p = progress - tail * trail;
+                    p = ((p % 1) + 1) % 1;
+                    const pt = heartConfig.point(p, scale);
+                    const fade = Math.pow(1 - tail, 0.56);
+                    const particle = loadParticles[i];
+                    particle.setAttribute('cx', pt.x.toFixed(2));
+                    particle.setAttribute('cy', pt.y.toFixed(2));
+                    particle.setAttribute('r', (0.9 + fade * 2.7).toFixed(2));
+                    particle.setAttribute('opacity', (0.08 + fade * 0.9).toFixed(3));
+                }
+
+                loadingRaf = requestAnimationFrame(renderLoading);
+            }
             loadingRaf = requestAnimationFrame(renderLoading);
+
             let displayProgress = 0,
                 targetProgress = 0,
                 progressAnim;
@@ -1142,7 +1229,14 @@
                         image.onload = () => image.decode ? image.decode().then(finishOne).catch(finishOne) : finishOne();
                         image.onerror = finishOne;
                         image.src = src;
-                        setTimeout(finishOne, isMobile() ? 4000 : 3000); if (image.complete) image.decode ? image.decode().then(finishOne).catch(finishOne) : finishOne(); }))); }
+                        setTimeout(finishOne, isMobile() ? 4000 : 3000);
+                        if (image.complete) {
+                            if (image.decode) {
+                                image.decode().then(finishOne).catch(finishOne);
+                            } else {
+                                finishOne();
+                            }
+                        } }))); }
 
             function finishLoading() {
                 if (complete) return;
@@ -1955,7 +2049,7 @@
         })();
     </script>
 
-    <!-- ══════════ 联系方式 · FolderFloat 交互脚本（可拖拽版） ══════════ -->
+    <!-- ══════════ 联系方式 · FolderFloat 交互脚本（可拖拽版 · 优化） ══════════ -->
     <script>
     (function () {
       'use strict';
@@ -2213,6 +2307,7 @@
             homeX: 0, homeY: 0,
             w: 0, h: 0,
             rx: 20, ry: 20,
+            maxR: 20,
             baseR: 0, r: 0, phase: 0,
             depth: 1, pushed: 0,
             _wx: null, _wy: null, _wr: null,
@@ -2265,6 +2360,7 @@
 
           p.w = sz.w; p.h = sz.h;
           p.rx = sz.w * 0.48; p.ry = sz.h * 0.48;
+          p.maxR = Math.max(p.rx, p.ry);
           p.baseR = pos.r; p.r = pos.r;
           p.x = pos.x; p.y = pos.y + sz.h / 2;
           p.homeX = p.x; p.homeY = p.y;
@@ -2279,7 +2375,7 @@
         });
       }
 
-      /* ── 拖拽 ── */
+      /* ── 拖拽（监听器只绑定一次） ── */
       function startDrag(i, e) {
         var pill = state.pills[i]; if (!pill) return;
         var folderRect = folderEl.getBoundingClientRect();
@@ -2307,9 +2403,6 @@
         pill.el.setAttribute('data-dragging', '');
         try { pill.el.setPointerCapture(e.pointerId); } catch (err) {}
 
-        window.addEventListener('pointermove', onDragMove);
-        window.addEventListener('pointerup', endDrag);
-        window.addEventListener('pointercancel', endDrag);
         e.preventDefault();
       }
 
@@ -2328,10 +2421,12 @@
         state.wasDragging = d.moved;
         d.pill.el.removeAttribute('data-dragging');
         try { d.pill.el.releasePointerCapture(d.pointerId); } catch (err) {}
-        window.removeEventListener('pointermove', onDragMove);
-        window.removeEventListener('pointerup', endDrag);
-        window.removeEventListener('pointercancel', endDrag);
       }
+
+      /* 拖拽监听器只绑定一次，避免每次拖拽 add/remove */
+      window.addEventListener('pointermove', onDragMove, { passive: true });
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
 
       /* ── 物理 ── */
       function startPhysics() {
@@ -2367,7 +2462,7 @@
         var dx = pb.x - pa.x, dy = pb.y - pa.y;
         var d2 = dx * dx + dy * dy;
         if (d2 === 0) return;
-        var maxR = Math.max(pa.rx, pa.ry) + Math.max(pb.rx, pb.ry);
+        var maxR = pa.maxR + pb.maxR;
         if (d2 >= maxR * maxR) return;
         var d = Math.sqrt(d2);
         var nx = dx / d, ny = dy / d;
@@ -2424,7 +2519,12 @@
           var damp = p.pushed > 0 ? PUSHED_DAMP : SPRING_DAMP;
           p.vx *= damp; p.vy *= damp;
           if (p.pushed > 0) p.pushed -= dt;
-          p.r = p.baseR + Math.sin(t * 0.7 + p.phase * 1.4) * 1.25 * p.depth;
+
+          // 静止检测：接近家位置时跳过摆动计算
+          var isStill = Math.abs(p.vx) + Math.abs(p.vy) < 0.01 &&
+                        Math.abs(p.x - p.homeX) + Math.abs(p.y - p.homeY) < 0.3 &&
+                        p.pushed <= 0;
+          p.r = isStill ? p.baseR : p.baseR + Math.sin(t * 0.7 + p.phase * 1.4) * 1.25 * p.depth;
         }
 
         for (var a = 0; a < n; a++) {
