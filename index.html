@@ -2535,12 +2535,23 @@
                 workCards.forEach(card => stopYearRoll(card.querySelector(".year-small")));
                 workAnims.forEach(a => a.cancel());
                 workAnims = [];
+                /* ★ 从「终态可见」切回「隐藏态」前，先把字段 transition 掐成 none：
+                   否则字段（company-name / desc-text 等）带着 0.42s 的 transition 从
+                   可见态「淡出」回 .field-pending 的隐藏态，这段多余的过渡会跟随后
+                   card.animate() 的入场动画（fill:backwards + delay）叠加，
+                   造成「回顶后再滚到工作经历页，三张卡入场一卡一卡的」。
+                   这里瞬时切回隐藏态，再双 rAF 恢复 transition，和 showWorkCardsInstantly
+                   用的是同一套「禁过渡→摆位→恢复过渡」的手势。 */
                 workCards.forEach(card => {
                     card.classList.add("pre-roll");
                     card.classList.remove("revealing");
                     clearCardInlineStyles(card);
+                    card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => { el.style.transition = "none"; });
                     setWorkFieldsPending(card, true);
                 });
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    workCards.forEach(card => card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => { el.style.transition = ""; }));
+                }));
             }
 
             /* 路过工作经历屏（跨屏跳转中途掠过 / 回顶滑过）时，卡片直接摆到终态。
