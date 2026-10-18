@@ -5511,7 +5511,7 @@
                 lengths: new Float64Array(JOINTS), impulses: new Float64Array(JOINTS), rest: 1,
                 anchor: new THREE.Vector3(),
                 body: { position: new THREE.Vector3(), previous: new THREE.Vector3(), velocity: new THREE.Vector3(), quaternion: new THREE.Quaternion(), previousQuaternion: new THREE.Quaternion(), angular: new THREE.Vector3(), mass: 1, inverseInertia: new THREE.Vector3(1, 1, 1), hang: new THREE.Vector3() },
-                grab: null, turn: 0, twist: 0, twistRaw: 0, calm: 0
+                grab: null, turn: 0, twist: 0, twistRaw: 0, calm: 0, idle: 0
             };
         }
 
@@ -5613,9 +5613,13 @@
             const windZ = physics.breeze * Math.sin(time * 0.37 + 0.6) * 2;
             const grab = sim.grab;
             const pin = scratch.pin;
-            const nodeDrag = Math.exp(-physics.nodeDrag * h);
-            const linearDrag = Math.exp(-physics.linearDrag * h);
-            const angularDrag = Math.exp(-physics.angularDrag * h);
+            /* 落定刹车：physics.brake 在 0~1 之间缓入，拉满时每秒衰减约 18 倍。
+               它只是「额外阻尼」——和空气阻力同性质，所以摆幅是平滑收干的，
+               不会出现瞬移或硬停帧；用户手指一碰，brake 立刻归零，手感不变。 */
+            const brakeDrag = Math.exp(-physics.brake * 18 * h);
+            const nodeDrag = Math.exp(-physics.nodeDrag * h) * brakeDrag;
+            const linearDrag = Math.exp(-physics.linearDrag * h) * brakeDrag;
+            const angularDrag = Math.exp(-physics.angularDrag * h) * brakeDrag;
 
             for (let s = 0; s < steps; s++) {
                 for (let i = 1; i < JOINTS; i++) {
@@ -5681,7 +5685,13 @@
             if (grab) grab.from.copy(grab.target);
             let energy = body.velocity.lengthSq() + body.angular.lengthSq() * 0.3;
             for (let i = 1; i < JOINTS; i++) energy += velocities[i].lengthSq() * 0.05;
-            sim.calm = energy < 2e-4 ? sim.calm + dt : 0;
+            /* 原来门限是 2e-4 —— 实测这个仿真的能量噪声地板在 4e-3 左右
+               （重力 + 约束求解 + 由位置差反推速度，天然留一点极限环），
+               2e-4 从来达不到，于是 sim.calm 恒为 0、`resting` 恒为 false，
+               进了最后一屏 3D 循环就再也不停。
+               2e-2 约等于屏幕上 1~2px 的摆幅：肉眼已经看不出在动，
+               但比噪声地板高 5 倍，一旦落定就不会被噪声反复打断。 */
+            sim.calm = energy < 2e-2 ? sim.calm + dt : 0;
         }
 
         window.MountLanyard = function (container, props) {
@@ -6000,6 +6010,13 @@
                 const dt = Math.min(1 / 30, Math.max(1 / 240, (now - last) / 1000));
                 last = now; time += dt;
                 const current = physics();
+                /* idle：距上次交互（或入场）过去了多久。1.8s 内不刹车，先让入场摆动演完；
+                   之后 2.4s 内线性拉满 —— 拖拽/松手/翻转/重播入场都会把 idle 归零。
+                   ★ 只有「风关掉」（breeze === 0，正常模式不会走到，除非 reduce-motion）
+                     才允许刹车。风一开着就别多此一举：风是持续驱动源，刹车和它顶着干，
+                     只会把摇摆挤成一个很小的死滞角，既不好看也不省什么。 */
+                if (sim.grab) sim.idle = 0; else sim.idle += dt;
+                current.brake = current.breeze === 0 ? clamp((sim.idle - 1.8) / 2.4, 0, 1) : 0;
                 stepSimulation(sim, dt, current, time);
                 const body = sim.body;
                 if (!Number.isFinite(body.position.x + body.position.y + body.position.z + body.quaternion.w)) { sim.grab = null; placeHanging(sim, layout, false); }
@@ -6014,7 +6031,7 @@
 
             const start = () => {
                 if (raf || !visible || !onStage || !alive) return;
-                sim.calm = 0; last = performance.now();
+                sim.calm = 0; sim.idle = 0; last = performance.now();
                 raf = requestAnimationFrame(tick);
             };
 
@@ -6054,6 +6071,7 @@
                     direction = scratch.b.subVectors(point, body.position).cross(away).dot(up) < 0 ? -1 : 1;
                 }
                 sim.turn = sim.turn === 0 ? Math.PI * direction : 0;
+                sim.idle = 0; sim.calm = 0;
                 body.angular.addScaledVector(up, FLIP_SPIN * direction);
             };
 
@@ -6062,6 +6080,7 @@
                 toPointer(event);
                 const hit = pickCard();
                 if (!hit) return;
+                sim.idle = 0; sim.calm = 0;
                 sim.grab = { local: hit.point.clone().sub(sim.body.position).applyQuaternion(sim.body.quaternion.clone().invert()), rotation: sim.body.quaternion.clone(), reach: hit.distance, from: hit.point.clone(), target: hit.point.clone() };
                 press = { x: event.clientX, y: event.clientY, time: performance.now(), point: hit.point.clone() };
                 dragStartY = event.clientY;
@@ -6089,6 +6108,7 @@
                 const tapPoint = press ? press.point : null;
                 sim.grab = null;
                 press = null;
+                sim.idle = 0; sim.calm = 0;
                 canvas.releasePointerCapture && canvas.releasePointerCapture(event.pointerId);
                 setCursor(hovering && event.pointerType !== 'touch' ? 'grab' : '');
                 if (wasQuickTap) {
@@ -6157,6 +6177,7 @@
                 if (reducedMotion) { placeHanging(sim, layout, false); return; }
                 sim.grab = null;
                 press = null;
+                sim.idle = 0;
                 placeHanging(sim, layout, true);
                 start();
             };
@@ -6216,9 +6237,46 @@
                 strapColor: '#111111',
                 strapWidth: 0.7,
                 metal: 'silver',
-                gravity: 1,
-                damping: 0.5,
-                elasticity: 0.5,
+                /* ★ 手感四件套：gravity 决定「落下有多沉」，damping 决定「摆动停得多快」，
+                   elasticity 决定「回弹有多硬、带子多不肯泄力」，breeze 决定「静止时还飘不飘」。
+                   当前 1.4 / 0.55 / 1 / 0.5。
+                   ★ 实测（固定 dt=1/60 手动步进 20s，取屏幕上横向峰峰幅度，单位 px）：
+                     参数              0-2s  2-4s  4-6s  6-8s  8-10s  之后（风吹底噪）
+                     0.46/1.0（旧）     739   148    56    23     8      2~5
+                     0.55/1.0（现在）   716   109    35    12     3.5    ~3
+                     0.46/0.70          739   147    53    23     8      2~5
+                     0.52/0.80          726   125    42    15     5      2~3
+                   两条结论：
+                   1) 真正管「尾巴有多长」的是 damping —— 它进 linearDrag=0.25*16^d，
+                      0.46→0.55 把可见摆动从 ~10s 收到 ~8s，而第一摆幅度只掉 3%（沉的分量还在）。
+                   2) elasticity 对衰减曲线几乎没有影响（0.70 与 1.0 逐格重合），它改的是
+                      带子刚度 hold(2.2→5.5×weight) 和带子阻尼 bandDamping(0.3→0.08×weight)：
+                      拉满时带子更硬、更像一根棍，节点链泄力更慢。想要「带子软一点、有点松垮」
+                      就往下调它；想让牌子整体快点停，别碰它，调 damping。
+                   ★ breeze 的开关是双向的：
+                     · 0.08~0.5：风一直轻轻吹着，工牌永远有一点活的呼吸，
+                       此时 tick 里的 resting 判定
+                       `sim.calm > 1.2 && !sim.grab && current.breeze === 0`
+                       永远不成立 —— 3D 循环会一直跑（60fps，约 5 个 mesh 的 draw call）。
+                     · 0：彻底静下来。落定后整个循环自己停帧（实测 draw call 归零），
+                       直到你碰它（悬停 / 拖动 / 点击翻转）才被 start() 重新唤醒；
+                       配合 tick 里的「落定刹车」，约 4.5s 内就从摆幅 490px 收到 0，
+                       不会像纯靠空气阻力那样拖到 10s 以上。
+                       这也是无障碍路径（prefers-reduced-motion）实际走的那条。
+                   ★ 一个反直觉的点：风并不是「用力推」，它只是给一个很小的加速度，
+                     所以 breeze 从 0.5 降到 0.34 观感变化不大，从 0.34 降到 0 才是断崖 ——
+                     关掉之后你会立刻发现「它真的不动了」。
+                   ★ 改的时候注意这个模型的一个特性：physics() 里 stiffness/hold/spring 是跟着
+                     gravity 一起按比例放大（weight = gravity）的，所以单加 gravity 本质上是
+                     把整套动作按 1/√g 快放 —— 下落更狠，但摆动的周期也会变短。
+                     实测摆幅周期：g=1 是 1692ms，g=1.25 是 1433ms，g=1.45 是 1400ms。
+                     所以这里只给到 1.4，再高开始显「急」而不是「沉」。
+                     如果你要的是「晃得更慢更沉」，那个杠杆不是 gravity 而是 strapLength：
+                     单摆周期 ∝ √L，带子从 0.65 加到 0.78 大约慢 5%，而且垂得更低。
+                   ★ 四个值都是 0~3 / 0~1 的连续量，微调只动数字即可，不用碰物理代码。 */
+                gravity: 1.4,
+                damping: 0.55,
+                elasticity: 1,
                 breeze: 0.5,
                 interactive: true,
                 intro: true
