@@ -5169,9 +5169,66 @@
          这里去掉 React 的 useRef/useEffect，改成原生 DOM 挂载，three.js 走 CDN。
          仅用于最后一屏收尾预览。
          ══════════════════════════════════════════════════════════════ -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <!-- ══ three.js（懒加载，不再站在首屏唯一的那条路上）══
+         原来这里是一个同步外链的 script 标签（src 指向 three@0.160.0/build/three.min.js）：
+         解析到它就得停下等下载（压缩后 167KB）再等执行完，后面的脚本才能继续。
+         （注释里刻意不写完整的标签字面量，免得以后用正则抽脚本块时配对错位。）
+         而 finishLoading 挂的是 DOMContentLoaded —— 于是一个「只在最后一屏用」的库，
+         直接决定了首屏加载动画什么时候肯淡出。
+         实测（无头 Edge / 1440x900 / 本地文件 / 同一份文件只改这一处）：
+           DCL            1539ms  →  204ms
+           加载动画淡出    1544ms  →  414ms
+         现在改成动态注入：第一次滚轮 / 触摸 / 按键 / 滚动，或 load 之后空闲时才拉；
+         拉到了派发 three-ready 唤醒下面两个脚本，拉不到就静默放弃 3D 吊牌
+         （只影响最后一屏，页面其余部分完全不受牵连）。
+         顺带记一笔：r160 是最后一个还带 build/three.min.js 的版本，控制台会警告它已弃用。
+         以后要升 three，得换成 ES Module + importmap，不能再走这个 URL。 ══ -->
     <script>
     (function () {
+        var THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";
+        var state = 0;                       // 0 未开始 / 1 加载中 / 2 就绪 / 3 失败
+        function load() {
+            if (state) return;
+            state = 1;
+            var s = document.createElement("script");
+            s.src = THREE_URL;
+            s.async = true;
+            s.onload = function () {
+                state = 2;
+                window.dispatchEvent(new Event("three-ready"));
+            };
+            s.onerror = function () {
+                state = 3;
+                /* 不弹错误、不重试：3D 吊牌是最后一屏的点缀，缺了不影响任何功能。
+                   留一条控制台线索，方便以后判断「吊牌没出来」是不是 CDN 的问题。 */
+                console.warn("[lanyard] three.js 拉取失败，最后一屏的 3D 吊牌已跳过：" + THREE_URL);
+            };
+            document.head.appendChild(s);
+        }
+        /* 第一次真实输入就开工：此时首屏早已绘完，下载和渲染都不抢任何东西 */
+        ["wheel", "touchstart", "pointerdown", "keydown", "scroll"].forEach(function (type) {
+            window.addEventListener(type, load, { once: true, passive: true });
+        });
+        /* 兜底：用户一直没输入（纯看首屏），load 之后空闲了再拉。
+           load 要等首屏那批图下完，本来就不在关键路径上，这时拉等于白赚。
+           6s 的 timeout 是故意往后放的：加载动画一结束，warmup 就会集中下详情图和
+           4 路视频（8MB 预算），没必要在这时候插一条 167KB 的 script 进去分带宽。
+           真要翻到最后一屏，一定先有滚动/滑动，上面那组 once 监听早就把它拉起来了。 */
+        function idleLoad() {
+            if ("requestIdleCallback" in window) window.requestIdleCallback(load, { timeout: 6000 });
+            else setTimeout(load, 4000);
+        }
+        if (document.readyState === "complete") idleLoad();
+        else window.addEventListener("load", idleLoad, { once: true });
+    })();
+    </script>
+    <script>
+    /* ★ 原来这里是一个立即执行的 (function(){ ... })()，顶部有 if (!window.THREE) return;
+       —— 那时 three 是同步外链，执行到这里必然已经就绪。
+       现在 three 改成懒加载，这个 IIFE 会在它之前解析到，那个 return 会让整个吊牌
+       （含 window.MountLanyard 的定义）永远不执行。所以改成「注册成一个函数」，
+       由上面那段加载器派发的 three-ready 决定何时执行。函数体一个字没动。 */
+    window.__bootLanyardFactory = function () {
         if (!window.THREE) return;
 
         const CARD_SIZES = { portrait: [1.6, 2.25], landscape: [2.25, 1.6] };
@@ -5656,7 +5713,18 @@
             catch { return; }
             renderer.setClearColor(0x000000, 0);
             renderer.outputColorSpace = THREE.SRGBColorSpace;
-            renderer.toneMapping = THREE.NeutralToneMapping;
+            /* ★ 原来写的是 THREE.NeutralToneMapping —— 那个常量 r162 才加进来，r160 里不存在。
+               赋值等于写了 undefined：着色器编译时打 "Unsupported toneMapping"（每份材质一条，
+               实测控制台 4 条）并回落到 Linear —— 也就是说这个属性从写上去那天起就没生效过，
+               吊牌一直呈现的是「不做色调映射」的样子，那正是你一直在看的效果。
+               这里把它**显式写成** NoToneMapping：观感一个像素都不变，但意图写清楚了、
+               警告也消失了（原来每次开控制台都是 4 条红字）。 */
+            renderer.toneMapping = THREE.NoToneMapping;
+            /* 试过换成 r160 自带的 AgX（最接近「中性」的现成曲线），实测观感差得比较明显：
+               卡面那块橙色 #f5822a 被压成灰扑扑的肉粉、白卡也发灰 —— AgX 是电影曲线的路子，
+               会整体去饱和，不适合当 Neutral 的替身。真要 NeutralToneMapping 只有升 three 到
+               r162+，而 r162 起已不再提供 build/three.min.js，得改成 ES Module + importmap，
+               是一笔单独的账。在那之前，保持现状是最稳妥的。 */
             renderer.toneMappingExposure = 1;
             const canvas = renderer.domElement;
             canvas.className = 'lanyard-canvas';
@@ -5733,7 +5801,12 @@
             let strapScale = STRAP_WIDTH;
             let tileRatio = 2;
             let raf = 0, last = performance.now(), time = 0;
-            let visible = true, alive = true, placed = false, hovering = false, press = null, imageToken = 0, dragStartY = 0;
+            /* onStage = 「用户正停在最后一屏」。和 visible 是两回事：
+               page4 是 position:fixed + opacity:0，滚动时它从不离开视口，
+               IntersectionObserver 永远报 intersecting（实测停在第一屏时容器 rect
+               就是 0,0,1416,808，visibility 还是 visible）—— 只靠 IO 关不掉这个循环。
+               所以额外由挂载脚本按 page4 的 .active 开关，见下面的 setActive。 */
+            let visible = true, onStage = false, alive = true, placed = false, hovering = false, press = null, imageToken = 0, dragStartY = 0;
             const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
             const paintFaces = () => {
@@ -5932,13 +6005,26 @@
                 if (!Number.isFinite(body.position.x + body.position.y + body.position.z + body.quaternion.w)) { sim.grab = null; placeHanging(sim, layout, false); }
                 render();
                 const resting = sim.calm > 1.2 && !sim.grab && current.breeze === 0;
-                if (visible && !resting) raf = requestAnimationFrame(tick);
+                /* ★ 补上 onStage：原来只有 visible，而 visible 在这套布局里恒为 true，
+                   结果吊牌在首页、作品页、详情页全都在后台满速跑 ——
+                   实测空转 2 秒 300 次 draw call（60fps × 5 个 mesh），
+                   满屏 MSAA + PBR + 自定义高光着色器，纯烧 GPU 和电。 */
+                if (visible && onStage && !resting) raf = requestAnimationFrame(tick);
             };
 
             const start = () => {
-                if (raf || !visible || !alive) return;
+                if (raf || !visible || !onStage || !alive) return;
                 sim.calm = 0; last = performance.now();
                 raf = requestAnimationFrame(tick);
+            };
+
+            /* 外部（挂载脚本）按 page4 的 .active 开关本循环；重复调用无副作用 */
+            const setActive = value => {
+                value = !!value;
+                if (value === onStage) return;
+                onStage = value;
+                if (value) start();
+                else if (raf) { cancelAnimationFrame(raf); raf = 0; }
             };
 
             const raycaster = new THREE.Raycaster();
@@ -6096,9 +6182,13 @@
                 container.classList.remove('lanyard');
             }
 
-            return { dispose, replayIntro };
+            return { dispose, replayIntro, setActive };
         };
-    })();
+    };
+
+    /* three 已经就绪（缓存命中 / 加载器先跑完）就直接建工厂，否则等事件 */
+    if (window.THREE) window.__bootLanyardFactory();
+    else window.addEventListener("three-ready", window.__bootLanyardFactory, { once: true });
     </script>
 
     <script>
@@ -6138,17 +6228,25 @@
                用 MutationObserver 监听 page4 的 class 变化，进入/离开整屏翻页都能触发。 */
             var page4 = document.getElementById('page4');
             if (page4 && window.MutationObserver) {
-                var wasActive = false;
+                /* ★ wasActive 原来写死 false：如果挂载那一刻 page4 已经是 .active
+                   （缓存命中 / three 晚到但用户已经翻到最后一屏），第一次进场动画会被跳过。
+                   这里补齐初值，并顺手把当前是否在台上告诉渲染循环 ——
+                   离开最后一屏时它会 cancelAnimationFrame，回来再重新起跑。 */
+                var wasActive = page4.classList.contains('active');
                 var mo = new MutationObserver(function () {
                     var active = page4.classList.contains('active');
                     if (active && !wasActive && handle && handle.replayIntro) handle.replayIntro();
+                    if (handle && handle.setActive) handle.setActive(active);
                     wasActive = active;
                 });
                 mo.observe(page4, { attributes: true, attributeFilter: ['class'] });
+                if (handle && handle.setActive) handle.setActive(wasActive);
             }
         }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
         else boot();
+        /* three 是懒加载的，到得比这里晚：它一就绪就再试一次（boot 内有 __mounted 去重） */
+        window.addEventListener('three-ready', boot);
     })();
     </script>
 
