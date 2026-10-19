@@ -19,8 +19,16 @@
        不用陪下面 30+KB 的大 CSS 一起等到最后（弱网下那是好几秒的空白）。
        大 CSS 已挪到 <body> 里、加载动画之后 —— 它没到之前，排在它后面的
        页面内容不会渲染，又被不透明的加载动画盖着，所以不会闪烁。 */
-        #loading-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 0.45s cubic-bezier(0.4,0,0.2,1),visibility 0.45s cubic-bezier(0.4,0,0.2,1);opacity:1;visibility:visible;pointer-events:auto;will-change:opacity;}
+        /* ★ 退出分两拍：前景（心形 / 文字 / 进度）260ms 先退干净，底色 520ms 后走完。
+           同一层一起淡的话，中途心形和「Heart Wave」会正好压在首屏大标题上，两层文字叠在一起。 */
+        #loading-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;transition:opacity 0.52s cubic-bezier(0.33,0,0.2,1),visibility 0s linear 0.52s;opacity:1;visibility:visible;pointer-events:auto;will-change:opacity;}
         #loading-overlay.fade-out{opacity:0;visibility:hidden;pointer-events:none;}
+        #loading-overlay .frame,#loading-overlay .load-meta,#loading-overlay .load-dots{transition:opacity 0.24s ease-out,transform 0.46s cubic-bezier(0.22,1,0.36,1);will-change:opacity,transform;}
+        #loading-overlay.fade-out .frame{opacity:0;transform:scale(0.84);}
+        #loading-overlay.fade-out .load-meta{opacity:0;transform:translateY(10px);}
+        #loading-overlay.fade-out .load-dots{opacity:0;transform:translateY(10px);}
+        /* 进度条最后一格从「半截」补到 100% 也别瞬移：只在收尾这一段挂过渡 */
+        #loading-overlay.fade-out .load-progress-fill{transition:transform 0.3s cubic-bezier(0.22,1,0.36,1);}
         #loading-overlay .frame{width:min(72vmin,380px);aspect-ratio:1;display:grid;place-items:center;contain:layout style paint;}
         #loading-overlay svg{width:100%;height:100%;overflow:visible;color:#2c2c2c;}
         #loading-overlay .load-meta{display:grid;gap:5px;text-align:center;justify-items:center;}
@@ -992,6 +1000,8 @@
         @media(prefers-reduced-motion:reduce){
             html.home-scroll-snap{scroll-behavior:auto;}
             .minimal-card::before,#loading-overlay .load-dots span{animation-duration:1ms!important;animation-iteration-count:1!important;}
+            /* 加载层退出在 reduce 下只留淡出，不做缩放/位移 */
+            #loading-overlay .frame,#loading-overlay .load-meta,#loading-overlay .load-dots{transition:opacity 0.2s linear!important;transform:none!important;}
             /* 占位扫光同理，reduce 下不做循环扫动 */
             .card-box::after,.ai-top-container::after,.ai-bottom-box::after{animation-duration:1ms!important;animation-iteration-count:1!important;}
             /* page3 四卡的进场在 reduce 下由 playPage3Cards 直接显形，不做位移 + 淡入 */
@@ -1629,13 +1639,14 @@
                 setTimeout(() => {
                     /* 心形粒子的 rAF 循环在 <body> 顶部的前置脚本里，本 IIFE 没有 loadingRaf
                        这个变量，只能隔空叫停 */
-                    if (window.__LOAD_HEART__) window.__LOAD_HEART__.stop();
+                    /* ★ 心形不再在这一刻硬停：它现在还有 240ms 的淡出要演，
+                       中途冻住会看到一帧「突然不动」的粒子。320ms 后再收工。 */
+                    setTimeout(() => { if (window.__LOAD_HEART__) window.__LOAD_HEART__.stop(); }, 320);
                     if (progressAnim) { cancelAnimationFrame(progressAnim);
                         progressAnim = null; }
                     loadProgressFill.style.transform = "scaleX(1)";
                     loadProgressText.textContent = "100%";
                     loadingOverlay.classList.add("fade-out");
-                    loadingOverlay.style.willChange = "auto";
                     /* ★ 预热从「淡出开始」改回「淡出完成后」才启动（仅桌面端）：
                        原来在 fade-out 刚加 class 的这一刻就 boostPage3VideoPriority +
                        scheduleWarmupDetailAssets，等于加载动画还在屏幕上淡出时，
@@ -1653,9 +1664,12 @@
                             scheduleWarmupDetailAssets();
                         }, 480);
                     }
+                    /* ★ 原来这里是 `isMobile() ? 220 : 500`：手机上 220ms 就 display:none，
+                       把 450ms 的淡出砍掉一半 —— 手机上那一下其实是「啪」地消失。
+                       现在两端统一推到 640ms（> 520ms 的淡出），滚动锁照旧早点放开。 */
                     setTimeout(() => { document.body.style.overflow = "";
-                        loadingOverlay.style.display = "none";
                         if (isMobile()) { document.body.style.overflow = "hidden"; } }, isMobile() ? 220 : 500);
+                    setTimeout(() => { loadingOverlay.style.display = "none"; }, 640);
                 }, remaining);
             }
             const preloadedImages = new Set();
