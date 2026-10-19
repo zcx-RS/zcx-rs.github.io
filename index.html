@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="zh-CN" class="home-scroll-snap" data-page-node-id="SwSEqV0k6L8APrpAF3ARvl">
 <head data-page-node-id="VemrM5GkKEL0PMuemMiBgH">
+    <!-- ★ 三源提前建连：three.js 走 lib.baomitu.com（实测 0.2s，jsdelivr 最差要 20s+），
+         卡面图走 img.alicdn.com（79KB，crossorigin 与下面 loadImage 的取图方式对齐）。
+         这三条只是打开 DNS/TLS，不下载，代价约等于 0，但省掉的是 1~3 个 RTT。 -->
+    <link rel="preconnect" href="https://lib.baomitu.com">
+    <link rel="preconnect" href="https://registry.npmmirror.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://img.alicdn.com" crossorigin>
     <meta charset="UTF-8" data-page-node-id="TFfutYMNrsGuPEt8T0w4iu">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0, viewport-fit=cover" data-page-node-id="Eh8lRwoSIgyGMK1eHxMbKg">
 <meta name="color-scheme" content="light" data-page-node-id="DgzMxZci4MDScJynjpKs1p">
@@ -5182,29 +5189,62 @@
          拉到了派发 three-ready 唤醒下面两个脚本，拉不到就静默放弃 3D 吊牌
          （只影响最后一屏，页面其余部分完全不受牵连）。
          顺带记一笔：r160 是最后一个还带 build/three.min.js 的版本，控制台会警告它已弃用。
-         以后要升 three，得换成 ES Module + importmap，不能再走这个 URL。 ══ -->
+         以后要升 three，得换成 ES Module + importmap，不能再走这个 URL。
+         ★ 2026-10 换源：原来是 jsdelivr，本机 curl 同文件 17.5s / 2.26s / 6.66s，
+           最差一次 25s；换成 lib.baomitu.com（0.196 / 0.223 / 0.212s）后，
+           实测「链接开始 → three 到齐」从 4749ms 降到 ~250ms，吊牌提前约 4.5s 出现。
+           三个源的文件 md5 完全一致（bc138621ece88793eb711a9e967b273a），不是不同构建。 ══ -->
     <script>
     (function () {
-        var THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js";
+        /* ★ 三源一字不差（md5 校验过），按实测速度排序，前一个失败才拉下一个。
+           换源原因见上面那段注释里的 curl 数据：jsdelivr 在国内经常要 5~20s，
+           而这 670KB 是「吊牌能不能出现」的唯一长尾。 */
+        var THREE_URLS = [
+            "https://lib.baomitu.com/three.js/0.160.0/three.min.js",      /* 实测 ~0.2s */
+            "https://registry.npmmirror.com/three/0.160.0/files/build/three.min.js", /* ~0.4s */
+            "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"        /* 兜底 */
+        ];
         var state = 0;                       // 0 未开始 / 1 加载中 / 2 就绪 / 3 失败
+        var next = 0;                        // 下一个要尝试的源
         function load() {
             if (state) return;
             state = 1;
+            attempt();
+        }
+        function attempt() {
+            if (next >= THREE_URLS.length) {
+                state = 3;
+                /* 不弹错误：3D 吊牌是最后一屏的点缀，三个源都挂了就静默放弃，
+                   只留一条控制台线索，方便以后判断「吊牌没出来」是不是网络问题。 */
+                console.warn("[lanyard] three.js 三个 CDN 源都拉取失败，3D 吊牌已跳过");
+                return;
+            }
             var s = document.createElement("script");
-            s.src = THREE_URL;
+            s.src = THREE_URLS[next++];
             s.async = true;
             s.onload = function () {
                 state = 2;
                 window.dispatchEvent(new Event("three-ready"));
             };
             s.onerror = function () {
-                state = 3;
-                /* 不弹错误、不重试：3D 吊牌是最后一屏的点缀，缺了不影响任何功能。
-                   留一条控制台线索，方便以后判断「吊牌没出来」是不是 CDN 的问题。 */
-                console.warn("[lanyard] three.js 拉取失败，最后一屏的 3D 吊牌已跳过：" + THREE_URL);
+                if (s.parentNode) s.parentNode.removeChild(s);
+                attempt();
             };
             document.head.appendChild(s);
         }
+        /* ★ 卡面图（79KB，img.alicdn.com）在这里就顺手预取一次：
+           它和 three.js 一起并行下来，等工厂真正 loadImage 时已经是缓存命中（实测省 ~85ms）。
+           crossOrigin 必须和 loadImage 里保持一致，否则浏览器会当成两条不同的缓存条目。 */
+        try {
+            var mountEl = document.getElementById("lanyardMount");
+            var faceUrl = mountEl && mountEl.getAttribute("data-front-image");
+            if (faceUrl) {
+                var warm = new Image();
+                warm.crossOrigin = "anonymous";
+                warm.decoding = "async";
+                warm.src = faceUrl;
+            }
+        } catch (e) {}
         /* 第一次真实输入就开工：此时首屏早已绘完，下载和渲染都不抢任何东西 */
         ["wheel", "touchstart", "pointerdown", "keydown", "scroll"].forEach(function (type) {
             window.addEventListener(type, load, { once: true, passive: true });
