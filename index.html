@@ -4033,7 +4033,19 @@
 
             /* a 标签（顶部导航）不拦：手机上从导航起手是很自然的滑动位置，
                真要点击的话 click 照旧触发，只有拖过 10px 才会被上面的抑制窗口挡掉 */
+            /* ★ 吊牌被按住时，整屏滑动引擎必须让路。
+               实测：在 3D 卡片上竖着拖，page4 会被 translateY(100→200px) 拖着走，
+               绳子锚点（挂在画布顶边外）就跟着整屏一起跑，松手还被判成一次翻页。
+               吊牌自己的 pointerdown 比这里的 touchstart 早，所以查得到。
+               这里刻意「实时查询」而不是用 grab/release 事件记个开关 ——
+               万一某次 release 没派发，开关会一直锁着，整屏就再也滑不动了。 */
+            function lanyardHolds(target) {
+                const grabbed = window.__lanyardGrabbed;
+                return typeof grabbed === 'function' && grabbed() && target && target.closest && target.closest('.lanyard-canvas');
+            }
+
             function blocksHomeSwipe(target) {
+                if (lanyardHolds(target)) return true;
                 const interactive = target.closest('button,input,textarea,select,video');
                 return interactive && !target.closest('.minimal-card');
             }
@@ -5901,6 +5913,22 @@
                 const anchorY = viewHeight / 2 + 0.2;
                 const cardTop = viewHeight / 2 - viewHeight * mix(0.12, 0.42, clamp(s.strapLength, 0, 1));
                 const hangTop = cardTop + (layout.hangY - layout.height / 2);
+                /* ★ 锚点移动时整串一起平移 —— 原来只给 nodes[0] 换了位置，其余节点留在原地，
+                   约束求解要拽好几帧才追上，观感就是「绳子顶端被扯了一下」。
+                   手机上地址栏收放 / 旋转都会走到这里（窄屏下 viewHeight 是按宽反推的，
+                   高度一变它就变）。位置和 previous 同步改，速度不变，所以摆动不受打断。 */
+                const shiftX = anchorX - sim.anchor.x;
+                const shiftY = anchorY - sim.anchor.y;
+                const shiftZ = -sim.anchor.z;
+                if (placed && (shiftX || shiftY || shiftZ)) {
+                    for (let i = 1; i <= JOINTS; i++) {
+                        sim.nodes[i].x += shiftX; sim.nodes[i].y += shiftY; sim.nodes[i].z += shiftZ;
+                        sim.previous[i].x += shiftX; sim.previous[i].y += shiftY; sim.previous[i].z += shiftZ;
+                    }
+                    const p = sim.body.position, q = sim.body.previous;
+                    p.x += shiftX; p.y += shiftY; p.z += shiftZ;
+                    q.x += shiftX; q.y += shiftY; q.z += shiftZ;
+                }
                 sim.anchor.set(anchorX, anchorY, 0);
                 configureSimulation(sim, layout, anchorY - hangTop);
                 sim.nodes[0].copy(sim.anchor);
@@ -6075,6 +6103,11 @@
                 raf = requestAnimationFrame(tick);
             };
 
+            /* 移动端整屏滑动引擎要判断「这一下是不是按在吊牌上」——
+               给它一个实时查询，而不是靠事件开关（事件漏发会把翻页永久锁死）。 */
+            const isGrabbed = () => !!sim.grab;
+            window.__lanyardGrabbed = isGrabbed;
+
             /* 外部（挂载脚本）按 page4 的 .active 开关本循环；重复调用无副作用 */
             const setActive = value => {
                 value = !!value;
@@ -6224,6 +6257,7 @@
 
             function dispose() {
                 alive = false;
+                if (window.__lanyardGrabbed === isGrabbed) window.__lanyardGrabbed = null;
                 cancelAnimationFrame(raf);
                 resizeObserver.disconnect();
                 intersectionObserver.disconnect();
