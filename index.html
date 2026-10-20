@@ -608,14 +608,14 @@
         .card-box.media-loaded::after{display:none;}
         /* 离屏就暂停占位动画（由 ensureShimmerObserver 打标记）。
            只改 play-state，不动 animation 简写，所以不会和上面那条冲突。 */
-        .card-box.is-offscreen::after,.ai-top-container.is-offscreen::after,.ai-bottom-box.is-offscreen::after{animation-play-state:paused;}
+        .card-box.is-offscreen::after,.ai-top-container.is-offscreen::after,.ai-bottom-box.is-offscreen::after,.ai-full-container.is-offscreen::after,.ai-proc-box.is-offscreen::after{animation-play-state:paused;}
         .card-box:active{transform:scale(0.96);}
         .card-box:hover{transform:translateY(-8px);box-shadow:0 18px 36px rgba(0,0,0,0.15);}
         /* 图片就位后淡入，而不是「啪」地硬弹出来。
            配合 IO 提前加载，多数情况下滚到时已经下完了，
            这个过渡只是把最后一帧的落地做得更顺。 */
-        .card-box img,.ai-top-container img,.ai-bottom-box img{opacity:0;transition:opacity 0.45s cubic-bezier(0.22,1,0.36,1);}
-        .card-box.media-loaded img,.ai-top-container.media-loaded img,.ai-bottom-box.media-loaded img{opacity:1;}
+        .card-box img,.ai-top-container img,.ai-bottom-box img,.ai-full-container img{opacity:0;transition:opacity 0.45s cubic-bezier(0.22,1,0.36,1);}
+        .card-box.media-loaded img,.ai-top-container.media-loaded img,.ai-bottom-box.media-loaded img,.ai-full-container.media-loaded img{opacity:1;}
         /* img 要抬到扫光层之上：::after 是定位元素，默认盖在普通流内容前面 */
         .card-box img{position:relative;z-index:1;width:100%;height:auto;display:block;object-fit:contain;background:inherit;}
         .card-box-wide{grid-column:1 / -1;}
@@ -647,6 +647,96 @@
         .ai-bottom-box:active{transform:scale(0.96);}
         .ai-bottom-box:hover{transform:translateY(-6px);box-shadow:0 16px 32px rgba(0,0,0,0.15);}
         .ai-bottom-box img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block;}
+        /* ★ 通屏容器 —— AI 辅助页最底下那条展示带。
+           「通屏」指的是横跨整个内容列（宽度吃满 .ai-layout），
+           ★ 但边框/圆角/左右边沿必须和上面 .ai-top-container、.ai-bottom-box 完全对齐，
+           所以这里的尺寸、描边、圆角、阴影全部照抄那两张卡，不做任何出血（不写负 margin、
+           也不写 width:100vw —— 后者还会被滚动条宽度坑掉 15px）。
+           唯一的区别只在图片：上面两张卡是定高裁切，这条要按原图比例整幅展示。 */
+        .ai-full-container{position:relative;width:100%;border-radius:20px;overflow:hidden;background:#1a1a1a;box-shadow:0 8px 24px rgba(0,0,0,0.12);border:3.5px solid rgb(226,131,1);display:flex;align-items:center;justify-content:center;line-height:0;}
+        .ai-full-container::after{content:"";position:absolute;left:-60%;top:0;bottom:0;width:220%;z-index:0;pointer-events:none;background:linear-gradient(110deg,#2a2a2a 0%,#3a3a3a 42%,#2a2a2a 80%);animation:mediaPlaceholderDark 1.8s ease-in-out infinite alternate;will-change:transform;}
+        .ai-full-container.media-loaded::after{display:none;}
+        /* aspect-ratio 按原图比例预留高度（原图 3180x1368，即 795:342）：图没到之前盒子已经有
+           最终高度，图到了不会再「撑一下」。这条带子在页面最底部，正好是用户盯着看的位置。 */
+        .ai-full-container img{position:relative;z-index:1;width:100%;height:auto;aspect-ratio:795 / 342;object-fit:cover;display:block;}
+        /* ── AI 创作流程：上面一条横向时间轴，下面三张「生成结果」 ────────────────
+           时间轴用纯 CSS 点亮，JS 只负责在进入视口时挂 .is-play；
+           每格的延迟靠 --i（li 上写死 0..4）算 transition-delay，不需要 GSAP 时间线。
+           三张图的「生成感」= 模糊+去色 → 清晰（filter/transform 过渡）+ 一道扫光 + 百分比，
+           都是合成器属性，不触发布局。 */
+        .ai-process{position:relative;width:100%;}
+        .proc-track{position:absolute;left:10%;right:10%;top:11px;height:2px;border-radius:2px;background:rgba(0,0,0,0.12);overflow:hidden;}
+        .proc-fill{display:block;height:100%;width:100%;background:rgb(226,131,1);transform:scaleX(0);transform-origin:left center;transition:transform 1.25s cubic-bezier(0.4,0,0.2,1);}
+        .ai-process.is-play .proc-fill{transform:scaleX(1);}
+        .proc-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:0;padding:0;list-style:none;}
+        .proc-steps li{display:flex;flex-direction:column;align-items:center;gap:5px;text-align:center;}
+        /* 圆点底色用页面底色，把后面的连线「挖」断，视觉上就是节点串在线上 */
+        .proc-dot{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--bg);border:2px solid rgba(0,0,0,0.14);color:rgba(0,0,0,0.3);font-size:0.6rem;line-height:1;font-variant-numeric:tabular-nums;transition:background 0.4s ease,border-color 0.4s ease,color 0.4s ease,transform 0.4s cubic-bezier(0.22,1,0.36,1);transition-delay:calc(var(--i) * 230ms);}
+        .proc-name{font-size:0.8rem;font-weight:600;letter-spacing:0.02em;color:rgba(0,0,0,0.4);transition:color 0.4s ease;transition-delay:calc(var(--i) * 230ms);}
+        .proc-desc{font-style:normal;font-size:0.69rem;line-height:1.35;color:rgba(0,0,0,0.32);transition:color 0.4s ease;transition-delay:calc(var(--i) * 230ms);}
+        .ai-process.is-play .proc-dot{background:rgb(226,131,1);border-color:rgb(226,131,1);color:#fff;transform:scale(1.1);}
+        .ai-process.is-play .proc-name{color:var(--text);}
+        .ai-process.is-play .proc-desc{color:rgba(0,0,0,0.52);}
+        .ai-proc-row{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--card-gap);width:100%;}
+        /* 三张同尺寸 2752x1536，比例写死不会裁切；object-fit:cover 只是兜底 */
+        .ai-proc-box{position:relative;overflow:hidden;border-radius:20px;background:#1a1a1a;border:3.5px solid rgb(226,131,1);box-shadow:0 8px 24px rgba(0,0,0,0.08);aspect-ratio:2752 / 1536;line-height:0;}
+        .ai-proc-box::after{content:"";position:absolute;left:-60%;top:0;bottom:0;width:220%;z-index:0;pointer-events:none;background:linear-gradient(110deg,#2a2a2a 0%,#3a3a3a 42%,#2a2a2a 80%);animation:mediaPlaceholderDark 1.8s ease-in-out infinite alternate;will-change:transform;}
+        .ai-proc-box.media-loaded::after{display:none;}
+        .ai-proc-box img{position:relative;z-index:1;display:block;width:100%;height:100%;object-fit:cover;filter:blur(14px) grayscale(1) brightness(1.06) contrast(0.92);transform:scale(1.06);transition:filter 1.35s cubic-bezier(0.22,1,0.36,1),transform 1.35s cubic-bezier(0.22,1,0.36,1);transition-delay:var(--d,0ms);}
+        .ai-proc-box.is-gen img{filter:none;transform:none;}
+        /* 扫光带：比 shimmer 窄、只扫一次，读作「这一格正在生成」 */
+        .ai-proc-box::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;background:linear-gradient(115deg,rgba(255,255,255,0) 32%,rgba(255,255,255,0.6) 50%,rgba(255,255,255,0) 68%);transform:translateX(-130%);}
+        .ai-proc-box.is-gen::before{animation:procScan 1.35s cubic-bezier(0.4,0,0.2,1) var(--d,0ms) 1 both;}
+        @keyframes procScan{0%{opacity:0;transform:translateX(-130%);}10%{opacity:1;}86%{opacity:1;}100%{opacity:0;transform:translateX(130%);}}
+        .proc-pct{position:absolute;right:10px;bottom:10px;z-index:3;padding:2px 8px;border-radius:999px;background:rgba(17,17,17,0.55);color:#fff;font-size:0.66rem;line-height:1.5;letter-spacing:0.04em;font-variant-numeric:tabular-nums;opacity:0;transition:opacity 0.3s ease;}
+        .ai-proc-box.is-gen .proc-pct{opacity:1;}
+        .ai-proc-box.is-done .proc-pct{opacity:0;}
+        /* 复位那一帧关掉所有过渡：滚出视口时把「点亮/锐化」撤回，不能让用户看到倒放 */
+        .proc-reset .proc-fill,.proc-reset .proc-dot,.proc-reset .proc-name,.proc-reset .proc-desc,.proc-reset .proc-pct,.proc-reset .ai-proc-box img{transition:none!important;}
+        /* 三张生成图可以点开看原图，给个放大镜提示（触屏没有 hover，直接常显） */
+        .ai-proc-box{cursor:zoom-in;-webkit-tap-highlight-color:transparent;}
+        .ai-proc-zoom{position:absolute;top:10px;right:10px;z-index:3;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:rgba(17,17,17,0.52);color:#fff;opacity:0;transform:translateY(-2px);transition:opacity 0.25s ease,transform 0.25s ease;pointer-events:none;}
+        .ai-proc-box:hover .ai-proc-zoom,.ai-proc-box:focus-visible .ai-proc-zoom{opacity:1;transform:none;}
+        .ai-proc-zoom svg{width:15px;height:15px;}
+        @media (hover:none){.ai-proc-box .ai-proc-zoom{opacity:0.9;transform:none;}}
+        /* ── 原图查看器 ────────────────────────────────────────────────
+           默认「适应屏幕」，再点图片（或右下按钮）切到 1:1 —— 这三张是 2752px 宽，
+           1440 屏下适应态只有 52%，要看细节就得能到 100%。
+           1:1 时舞台变成滚动容器，鼠标按住可拖，触屏直接滑；
+           margin:auto 居中而不靠 justify-content:center —— 后者在内容超宽时会把左侧裁掉一截，
+           滚到头也看不到图的左边缘。 */
+        .proc-lightbox{position:fixed;inset:0;z-index:120;display:flex;flex-direction:column;background:rgba(14,13,12,0.95);opacity:0;visibility:hidden;pointer-events:none;transition:opacity 0.28s cubic-bezier(0.4,0,0.2,1),visibility 0.28s;}
+        .proc-lightbox.active{opacity:1;visibility:visible;pointer-events:auto;}
+        .proc-lb-stage{flex:1 1 auto;min-height:0;display:flex;overflow:hidden;padding:clamp(16px,3vw,40px) clamp(16px,7vw,90px);}
+        .proc-lb-img{display:block;margin:auto;width:auto;height:auto;max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,0.6);cursor:default;user-select:none;-webkit-user-select:none;}
+        .proc-lightbox.zoomed .proc-lb-stage{overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:clamp(12px,2vw,28px);}
+        .proc-lightbox.zoomed .proc-lb-img{max-width:none;max-height:none;border-radius:0;box-shadow:none;cursor:grab;}
+        .proc-lightbox.dragging .proc-lb-img{cursor:grabbing;}
+        /* 按钮底色用深色半透明而不是浅色：1:1 时图片铺满整屏，
+           底部这几张 A+ 图是白底的，浅色按钮直接糊在白色里看不见。 */
+        .proc-lb-close{position:absolute;top:clamp(14px,3vw,24px);right:clamp(14px,3vw,24px);z-index:3;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.3);background:rgba(17,17,17,0.55);color:#fff;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background 0.25s ease,transform 0.25s ease;}
+        .proc-lb-close:hover{background:rgba(255,140,66,0.9);transform:scale(1.06);}
+        .proc-lb-close svg,.proc-lb-nav svg{width:22px;height:22px;}
+        .proc-lb-nav{position:absolute;top:50%;transform:translateY(-50%);z-index:3;display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,0.26);background:rgba(17,17,17,0.45);color:#fff;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background 0.25s ease;}
+        .proc-lb-nav:hover{background:rgba(255,140,66,0.85);}
+        .proc-lb-prev{left:clamp(8px,1.6vw,20px);}
+        .proc-lb-next{right:clamp(8px,1.6vw,20px);}
+        .proc-lb-bar{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:12px;padding:0 0 max(18px,env(safe-area-inset-bottom));color:rgba(255,255,255,0.78);font-size:0.76rem;letter-spacing:0.06em;font-variant-numeric:tabular-nums;}
+        .proc-lb-zoom{border:1px solid rgba(255,255,255,0.24);background:rgba(255,255,255,0.08);color:#fff;border-radius:999px;padding:5px 14px;font-size:0.72rem;letter-spacing:0.06em;cursor:pointer;transition:background 0.25s ease;}
+        .proc-lb-zoom:hover{background:rgba(255,140,66,0.85);border-color:transparent;}
+        /* 打开时锁背景滚动。移动端 detail-scroll-mode 下 body 才是滚动容器，两个都要管；
+           JS 会记住开合时的滚动位置并还原，避免锁 overflow 时被顶回顶部。 */
+        html.lb-open,html.lb-open body{overflow:hidden!important;}
+        /* 手机上左右内边距收窄：2752x1536 的横图放在 390 竖屏里，「适应」态上限就是屏宽，
+           原来的 clamp(16px,7vw,90px) 会让它比卡片还窄 —— 点开放大反而变小。 */
+        @media (max-width:768px){
+            .proc-lb-stage{padding:10px;}
+            .proc-lightbox.zoomed .proc-lb-stage{padding:8px;}
+            .proc-lb-prev{left:6px;}
+            .proc-lb-next{right:6px;}
+            .proc-lb-nav{width:40px;height:40px;}
+            .proc-lb-close{width:40px;height:40px;}
+        }
         @keyframes mediaPlaceholderDark{from{transform:translate3d(-25%,0,0);}to{transform:translate3d(25%,0,0);}}
 
         /* ★ 修复：水平内边距与 .detail-page 的 2vw 对齐，避免 detail4 内容比前三个二级页更宽 */
@@ -876,12 +966,20 @@
             .card-box{min-height:auto;border-radius:14px;border-width:2.5px;}
             .ai-top-container{min-height:auto;border-radius:14px;border-width:2.5px;}
             .ai-bottom-box{min-height:auto;border-radius:14px;border-width:2.5px;}
+            .ai-full-container{border-radius:14px;border-width:2.5px;}
+            /* 五个步骤横排在 370px 里，说明文字放不下 —— 只留标题，说明靠语义传达 */
+            .proc-dot{width:22px;height:22px;font-size:0.56rem;}
+            .proc-track{top:10px;}
+            .proc-name{font-size:0.68rem;}
+            .proc-desc{display:none;}
+            .ai-proc-row{grid-template-columns:1fr;}
+            .ai-proc-box{border-radius:14px;border-width:2.5px;}
             /* 移动端扫光放慢一档（2.4s）：屏小、图多，扫得太快会显得躁 */
             .card-box::after{animation-duration:2.4s;}
-            .ai-top-container::after,.ai-bottom-box::after{animation-duration:2.4s;}
+            .ai-top-container::after,.ai-bottom-box::after,.ai-full-container::after,.ai-proc-box::after{animation-duration:2.4s;}
             /* 上面三条用的是 animation 简写，简写会把 play-state 重置回 running。
                所以暂停规则必须写在它们之后才能生效（同特异度靠源码顺序决胜）。 */
-            .card-box.is-offscreen::after,.ai-top-container.is-offscreen::after,.ai-bottom-box.is-offscreen::after{animation-play-state:paused;}
+            .card-box.is-offscreen::after,.ai-top-container.is-offscreen::after,.ai-bottom-box.is-offscreen::after,.ai-full-container.is-offscreen::after,.ai-proc-box.is-offscreen::after{animation-play-state:paused;}
             .ai-layout{gap:12px;padding-bottom:calc(84px + var(--safe-bottom));}
             .ai-bottom-row{grid-template-columns:1fr;gap:12px;}
             /* ★ 修复：左右内边距与 .detail-page 的 10px 对齐 */
@@ -903,11 +1001,11 @@
             /* will-change 是给 hover 位移预备的合成层。触屏根本没有 hover，
                而这些卡片在详情页里能有十几二十个 —— 每个都常驻提升一层，
                大图一多就是几十 MB 的层内存，滚动反而更卡。触屏下一律撤掉。 */
-            .minimal-card,.card-box,.ai-bottom-box{will-change:auto;}
+            .minimal-card,.card-box,.ai-bottom-box,.ai-full-container{will-change:auto;}
             /* 会被无限动画驱动的伪元素同样撤掉常驻提升：
                详情页里这些占位能有十几二十个，每个都常驻一层，大图一多反而更卡。
                撤掉 will-change 不影响动画本身 —— 跑起来的 transform 动画浏览器会自动提层。 */
-            .minimal-card::before,.card-box::after,.ai-top-container::after,.ai-bottom-box::after{will-change:auto;}
+            .minimal-card::before,.card-box::after,.ai-top-container::after,.ai-bottom-box::after,.ai-full-container::after,.ai-proc-box::after{will-change:auto;}
             #detail-contact{padding:0;justify-content:center;}
         }
 
@@ -1003,7 +1101,11 @@
             /* 加载层退出在 reduce 下只留淡出，不做缩放/位移 */
             #loading-overlay .frame,#loading-overlay .load-meta,#loading-overlay .load-dots{transition:opacity 0.2s linear!important;transform:none!important;}
             /* 占位扫光同理，reduce 下不做循环扫动 */
-            .card-box::after,.ai-top-container::after,.ai-bottom-box::after{animation-duration:1ms!important;animation-iteration-count:1!important;}
+            .card-box::after,.ai-top-container::after,.ai-bottom-box::after,.ai-full-container::after,.ai-proc-box::after{animation-duration:1ms!important;animation-iteration-count:1!important;}
+            /* 生成锐化是靠 1.35s 的 filter 过渡演的，reduce 下一律直接给清晰态 */
+            .ai-proc-box img{transition:none;filter:none;transform:none;}
+            .ai-proc-box::before{display:none;}
+            .proc-fill,.proc-dot,.proc-name,.proc-desc{transition:none;}
             /* page3 四卡的进场在 reduce 下由 playPage3Cards 直接显形，不做位移 + 淡入 */
             .page1,.page-work,.page2,.page3,.page4,.detail-page{transition-duration:0.01ms!important;}
             /* ★ 补一条漏网的无限循环：
@@ -1106,6 +1208,16 @@
                 <span class="back-btn-text" data-page-node-id="QHeZPifMLgCEZj6wpmrL1W">回到首页</span>
             </span>
         </button>
+    </div>
+
+    <!-- ★ AI 创作过程三张图的原图查看器。放在 body 级而不是 .detail-page 里：
+         后者在切页时会跑 opacity 过渡，opacity < 1 会形成包含块，把 fixed 子元素带偏。 -->
+    <div class="proc-lightbox" id="procLightbox" role="dialog" aria-modal="true" aria-label="查看原图" aria-hidden="true">
+        <button class="proc-lb-close" type="button" aria-label="关闭"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="proc-lb-nav proc-lb-prev" type="button" aria-label="上一张"><svg viewBox="0 0 24 24" fill="none"><path d="M15 5L8 12l7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="proc-lb-nav proc-lb-next" type="button" aria-label="下一张"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <div class="proc-lb-stage"><img class="proc-lb-img" alt="" decoding="async"></div>
+        <div class="proc-lb-bar"><span class="proc-lb-count">1 / 3</span><button class="proc-lb-zoom" type="button">1:1</button></div>
     </div>
 
     <script>
@@ -1435,9 +1547,31 @@
                 ],
                 detail2: ["https://img.alicdn.com/imgextra/i2/3952997314/O1CN011vvXff23trxi7PiRZ_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01irl2An23trxjSAHyR_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01W3XUvc23trxjSAQIT_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01NEyvgV23trxjVxGJC_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN01tg8g5m23trxjWiK44_!!3952997314.webp","https://img.alicdn.com/imgextra/i1/3952997314/O1CN01jVXWM723trxi9hyb1_!!3952997314.webp"]
             };
+            /* AI 创作流程的五个步骤：[标题, 说明]。说明在手机上会被隐藏（横向五个格放不下），
+               所以每条的说明都要能独立看懂，不要写成半句话。 */
+            const aiProcessSteps = [
+                ["素材", "产品图 · 品牌 logo · 任务需求"],
+                ["提示词", "场景、文案、人物与尺寸约束"],
+                ["生成", "多轮出图，反复收敛风格"],
+                ["筛选", "挑构图、修细节、统一色调"],
+                ["成稿", "A+ 页面模块与英文文案"]
+            ];
             const aiImages = {
                 top: "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01z2M1e923trxi5TvZX_!!3952997314.webp",
-                bottom: ["https://img.alicdn.com/imgextra/i3/3952997314/O1CN01CGft5C23trxiQQdDq_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN015rF3oT23trxhiA3T7_!!3952997314.webp"]
+                bottom: ["https://img.alicdn.com/imgextra/i3/3952997314/O1CN01CGft5C23trxiQQdDq_!!3952997314.webp","https://img.alicdn.com/imgextra/i3/3952997314/O1CN015rF3oT23trxhiA3T7_!!3952997314.webp"],
+                /* ★ 通屏（满幅）展示图，页面最底下那一条。
+                   原图 3180x1368（.jpg 后缀但实际是 WebP，103KB）—— 比例与上一版 795x342 完全相同，
+                   所以 CSS 里的 aspect-ratio 不用动；换图若比例变了，记得同步改那条。
+                   3180 宽在 1440 视口下是 2.2 倍余量，2K 屏也不虚。 */
+                full: "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01zTTqMYVSUBB6SJ52_!!3952997314.jpg",
+                /* ★ AI 创作过程的三个产出（A+ 页面模块）。三张都是 2752x1536、比例完全一致，
+                   所以卡片尺寸可以写死 aspect-ratio 而不会裁到画面。
+                   253KB / 1025KB / 1233KB。 */
+                proc: [
+                    "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01FXeSUKLAXBD5aQk4_!!3952997314.jpg",
+                    "https://img.alicdn.com/imgextra/i4/3952997314/O1CN012sBlfGNIi1B5aQk4_!!3952997314.webp",
+                    "https://img.alicdn.com/imgextra/i4/3952997314/O1CN01uiSR9prJxoD5aQk4_!!3952997314.webp"
+                ]
             };
             /* ★ 换成又拍高清源（淘宝视频云会把上传的片重编码成 720p 低码率，画质损失严重）
                顺序对应三张网格卡：竖屏 / 横屏1080p / 横屏720p
@@ -1688,7 +1822,7 @@
                     ].map(originalImageUrl);
                 }
                 if (id === "detail2") return (galleryImages.detail2 || []).map(originalImageUrl);
-                if (id === "detail3") return [aiImages.top, ...aiImages.bottom].map(originalImageUrl);
+                if (id === "detail3") return [aiImages.top, ...aiImages.bottom, aiImages.full, ...aiImages.proc].map(originalImageUrl);
                 return [];
             }
 
@@ -1943,6 +2077,10 @@
                 'O1CN01W3XUvc23trxjSAQIT_!!3952997314': 4323900,
                 'O1CN01jVXWM723trxi9hyb1_!!3952997314': 4954692,
                 'O1CN01irl2An23trxjSAHyR_!!3952997314': 5438694,
+                'O1CN01zTTqMYVSUBB6SJ52_!!3952997314': 105782,
+                'O1CN01FXeSUKLAXBD5aQk4_!!3952997314': 259218,
+                'O1CN012sBlfGNIi1B5aQk4_!!3952997314': 1049366,
+                'O1CN01uiSR9prJxoD5aQk4_!!3952997314': 1262740,
             };
             const UNKNOWN_IMAGE_BYTES = 719 * 1024;   // 表里查不到时按全站中位数估
             /* 超过这个体积的图视为「大图」，懒加载时用更大的提前量提前开工。
@@ -2088,7 +2226,7 @@
                    一直没空闲而无限拖 —— 猛加载最终还是要上，只是排在首屏之后。 */
                 requestIdleTask(preloadAllMediaAggressively, isMobile() ? 900 : 1200); }
 
-            function markImageLoaded(img) { const box = img.closest(".card-box, .ai-top-container, .ai-bottom-box"); if (box) box.classList.add("media-loaded"); }
+            function markImageLoaded(img) { const box = img.closest(".card-box, .ai-top-container, .ai-bottom-box, .ai-full-container, .ai-proc-box"); if (box) box.classList.add("media-loaded"); }
 
             const VIDEO_COVER_TIME = 0.12;   // 视频卡片的封面帧时间（秒），模板与兜底原来各写死一份
 
@@ -2237,6 +2375,262 @@
                 return `<div class="cards-grid">${images.map((src, i) => `<div class="card-box">${imageTag(src, `作品${i + 1}`, i)}</div>`).join("")}</div>`;
             }
 
+            /* ★ 原图查看器 —— 点三张生成图放大看原始像素（原图 2752px 宽）。
+               几个刻意的决定：
+               · 取的是 img 当前真正的 src（currentSrc || src || data-src），不做任何缩放/裁剪，
+                 所以看到的就是原始文件；
+               · 默认「适应屏幕」，再点图片或右下按钮切 1:1 —— 1440 屏下适应态只有 52%，细节得靠 1:1；
+               · Esc 关闭、← → 换图、点图片外的区域关闭；
+               · 打开时锁 body 滚动，并记住开合位置还原 —— 移动端 body 才是滚动容器，
+                 只锁 html 的话背后照样会滚。 */
+            const procLightbox = (function () {
+                const el = document.getElementById("procLightbox");
+                if (!el) return null;
+                const stage = el.querySelector(".proc-lb-stage");
+                const lbImg = el.querySelector(".proc-lb-img");
+                const counter = el.querySelector(".proc-lb-count");
+                const zoomBtn = el.querySelector(".proc-lb-zoom");
+                const prevBtn = el.querySelector(".proc-lb-prev");
+                const nextBtn = el.querySelector(".proc-lb-next");
+                const closeBtn = el.querySelector(".proc-lb-close");
+                let boxes = [], idx = 0, opened = false, lastFocus = null, savedY = 0, drag = null, moved = false;
+
+                function srcOf(box) {
+                    const im = box && box.querySelector("img");
+                    if (!im) return null;
+                    const src = im.currentSrc || im.src || im.getAttribute("data-src") || "";
+                    return src ? { src: src, alt: im.alt || "AI 生成结果" } : null;
+                }
+                function render() {
+                    const item = srcOf(boxes[idx]);
+                    if (!item) return;
+                    lbImg.src = item.src;
+                    lbImg.alt = item.alt;
+                    counter.textContent = (idx + 1) + " / " + boxes.length;
+                    el.classList.remove("zoomed");
+                    zoomBtn.textContent = "1:1";
+                    const many = boxes.length > 1;
+                    prevBtn.style.display = many ? "" : "none";
+                    nextBtn.style.display = many ? "" : "none";
+                    stage.scrollTop = 0;
+                    stage.scrollLeft = 0;
+                }
+                function open(list, i, from) {
+                    if (!list || !list.length) return;
+                    boxes = list;
+                    idx = Math.max(0, Math.min(list.length - 1, i || 0));
+                    lastFocus = from || null;
+                    opened = true;
+                    savedY = window.pageYOffset || document.documentElement.scrollTop || 0;
+                    render();
+                    el.classList.add("active");
+                    el.setAttribute("aria-hidden", "false");
+                    document.documentElement.classList.add("lb-open");
+                    try { closeBtn.focus({ preventScroll: true }); } catch (e) {}
+                }
+                function close() {
+                    if (!opened) return;
+                    opened = false;
+                    drag = null;
+                    el.classList.remove("active");
+                    el.classList.remove("zoomed");
+                    el.setAttribute("aria-hidden", "true");
+                    document.documentElement.classList.remove("lb-open");
+                    if (savedY) { try { window.scrollTo(0, savedY); } catch (e) {} }
+                    /* 延迟清 src：等淡出结束再释放解码位图，否则关闭动画里会闪一下空白 */
+                    setTimeout(function () { if (!opened) { lbImg.removeAttribute("src"); lbImg.alt = ""; } }, 340);
+                    if (lastFocus && lastFocus.focus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) {} }
+                }
+                function go(d) {
+                    if (!opened || boxes.length < 2) return;
+                    idx = (idx + d + boxes.length) % boxes.length;
+                    render();
+                }
+                function toggleZoom(e) {
+                    const z = el.classList.toggle("zoomed");
+                    zoomBtn.textContent = z ? "适应" : "1:1";
+                    if (!z) { stage.scrollLeft = 0; stage.scrollTop = 0; return; }
+                    /* 1:1 之后以点击位置为中心，避免每次都从左上角开始找。
+                       ★ 读一次 getBoundingClientRect 就强制重排了，此时滚动范围已经是「2752 宽」；
+                       如果只放在 rAF 里做，回调跑在该帧布局之前，拿到的是放大前的 scrollWidth
+                       （等于视口宽），算出来的位移是 0 —— 表现就是永远停在左上角。
+                       命中判定用「图片」的矩形而不是舞台的：舞台从视口 (0,0) 起算，
+                       而键盘触发和脚本 .click() 的合成事件坐标正好是 (0,0)，用舞台矩形
+                       会把它误判成「点了左上角」。 */
+                    const ir = lbImg.getBoundingClientRect();
+                    const hasPt = e && typeof e.clientX === "number" &&
+                        e.clientX >= ir.left && e.clientX <= ir.right && e.clientY >= ir.top && e.clientY <= ir.bottom;
+                    const rx = hasPt ? (e.clientX - ir.left) / ir.width : 0.5;
+                    const ry = hasPt ? Math.min(1, Math.max(0, (e.clientY - ir.top) / ir.height)) : 0.5;
+                    const apply = function () {
+                        stage.scrollLeft = Math.max(0, stage.scrollWidth * rx - stage.clientWidth / 2);
+                        stage.scrollTop = Math.max(0, stage.scrollHeight * ry - stage.clientHeight / 2);
+                    };
+                    apply();
+                    requestAnimationFrame(apply);   // 补一次兜底：个别情况下首帧滚动范围还没生效
+                }
+                closeBtn.addEventListener("click", function (e) { e.stopPropagation(); close(); });
+                prevBtn.addEventListener("click", function (e) { e.stopPropagation(); go(-1); });
+                nextBtn.addEventListener("click", function (e) { e.stopPropagation(); go(1); });
+                zoomBtn.addEventListener("click", function (e) { e.stopPropagation(); toggleZoom(e); });
+                stage.addEventListener("click", function (e) {
+                    if (moved) { moved = false; return; }
+                    /* 点图片本身不做事：放大就一步到位，不要再叠一层缩放。
+                       用 1:1 / 适应 这个带文字的按钮来表达意图，误触点图也不会跳一下。 */
+                    if (e.target === lbImg) return;
+                    close();
+                });
+                /* 1:1 下的拖拽平移（触屏走原生滚动，鼠标没有滚动条可拖） */
+                stage.addEventListener("pointerdown", function (e) {
+                    if (!el.classList.contains("zoomed") || e.button !== 0) return;
+                    drag = { x: e.clientX, y: e.clientY, sl: stage.scrollLeft, st: stage.scrollTop };
+                    moved = false;
+                    el.classList.add("dragging");
+                    try { stage.setPointerCapture(e.pointerId); } catch (err) {}
+                });
+                stage.addEventListener("pointermove", function (e) {
+                    if (!drag) return;
+                    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) moved = true;
+                    stage.scrollLeft = drag.sl - dx;
+                    stage.scrollTop = drag.st - dy;
+                });
+                ["pointerup", "pointercancel"].forEach(function (type) {
+                    stage.addEventListener(type, function (e) {
+                        drag = null;
+                        el.classList.remove("dragging");
+                        try { stage.releasePointerCapture(e.pointerId); } catch (err) {}
+                    });
+                });
+                document.addEventListener("keydown", function (e) {
+                    if (!opened) return;
+                    if (e.key === "Escape") { e.preventDefault(); close(); }
+                    else if (e.key === "ArrowLeft") { e.preventDefault(); go(-1); }
+                    else if (e.key === "ArrowRight") { e.preventDefault(); go(1); }
+                });
+                return { open: open, close: close };
+            })();
+
+            /* ★ AI 创作过程动画 —— 进入视口时：时间轴从左往右点亮，三张图依次「生成」出来。
+               为什么不用 GSAP 时间线：这里只有两件事要排（连线填充 + 三格错峰），
+               delay 用 CSS 的 transition-delay / animation-delay 表达更省事，也不会和
+               页面里已有的滚动动画抢 ticker。JS 只做三件 CSS 做不到的事：
+                 ① 时机：IntersectionObserver —— 进入视口播一次，彻底滚出视口后复位，
+                    再滚回来会重新播一遍（见下面 reset 的注释）；
+                 ② 图片就绪：三张图是懒加载的，没下完就播等于演了个空盒子，等 load 再开；
+                    但也给 3s 上限，网慢不能把动画卡死；
+                 ③ 百分比：0→100% 的计数文字（纯 CSS 数不了数）。
+               reduce-motion 下直接置终态，不播反而更好 —— 见样式表里那组覆盖。 */
+            function bindProcReveal(root) {
+                const row = root.querySelector(".ai-proc-row");
+                const process = root.querySelector(".ai-process");
+                if (!row || row.dataset.bound === "1") return;
+                row.dataset.bound = "1";
+                const boxes = Array.prototype.slice.call(row.querySelectorAll(".ai-proc-box"));
+                if (!boxes.length) return;
+                /* 点（或键盘回车）任意一张 → 打开原图查看器，索引按当前这一排算 */
+                boxes.forEach(function (box, i) {
+                    box.setAttribute("role", "button");
+                    box.setAttribute("tabindex", "0");
+                    box.setAttribute("aria-label", "查看原图");
+                    box.addEventListener("click", function () {
+                        if (procLightbox) procLightbox.open(boxes, i, box);
+                    });
+                    box.addEventListener("keydown", function (e) {
+                        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); box.click(); }
+                    });
+                });
+                const reduced = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+                const STEP = 240, DUR = 1350;
+                let started = false, readyPending = false, gen = 0, timers = [], rafs = [];
+                function clearScheduled() {
+                    timers.forEach(clearTimeout); timers = [];
+                    rafs.forEach(cancelAnimationFrame); rafs = [];
+                }
+                function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+                function play() {
+                    if (process) process.classList.add("is-play");
+                    boxes.forEach(function (box, i) {
+                        if (reduced) { box.classList.add("is-gen"); box.classList.add("is-done"); return; }
+                        const delay = i * STEP;
+                        box.style.setProperty("--d", delay + "ms");
+                        later(function () {
+                            box.classList.add("is-gen");
+                            const pct = box.querySelector(".proc-pct");
+                            if (!pct) return;
+                            pct.textContent = "0%";
+                            const t0 = performance.now();
+                            (function tick(now) {
+                                if (!started) return;   // 中途被复位就别再往里写
+                                const p = Math.min(1, (now - t0) / DUR);
+                                pct.textContent = Math.round(p * 100) + "%";
+                                if (p < 1) rafs.push(requestAnimationFrame(tick));
+                                else later(function () { box.classList.add("is-done"); }, 420);
+                            })(t0);
+                        }, delay);
+                    });
+                }
+                function go() { if (started) return; started = true; readyPending = false; play(); }
+                function whenReady() {
+                    if (started || readyPending) return;
+                    readyPending = true;
+                    const my = ++gen;
+                    const imgs = boxes.map(function (b) { return b.querySelector("img"); }).filter(Boolean);
+                    let left = imgs.length;
+                    if (!left) { go(); return; }
+                    /* gen 是为了让「已经滚走之后才 load 完」的回调失效，
+                       否则会在屏幕外偷偷播一遍，回来时看到的是播完的终态。 */
+                    const one = function () { if (my !== gen || left <= 0) return; if (--left <= 0) go(); };
+                    imgs.forEach(function (im) {
+                        if (im.complete && im.naturalWidth > 0) one();
+                        else {
+                            im.addEventListener("load", one, { once: true });
+                            im.addEventListener("error", one, { once: true });
+                        }
+                    });
+                    later(function () { if (my === gen && !started) go(); }, 3000);   // 网络异常也不能让动画永远不出现
+                }
+                /* ★ 复位：整套状态退回「未播放」，下次进视口重播一遍。
+                   「撤销点亮」必须用 transition:none 提交，否则倒放会被看见 ——
+                   尤其三格图片那条 1.35s 的 blur 过渡，往回走特别明显。 */
+                function reset() {
+                    if (!started && !readyPending) return;
+                    started = false;
+                    readyPending = false;
+                    gen++;
+                    clearScheduled();
+                    root.classList.add("proc-reset");
+                    boxes.forEach(function (box) {
+                        box.classList.remove("is-gen");
+                        box.classList.remove("is-done");
+                        box.style.removeProperty("--d");
+                        const pct = box.querySelector(".proc-pct");
+                        if (pct) pct.textContent = "0%";
+                    });
+                    if (process) process.classList.remove("is-play");
+                    void root.offsetWidth;   // 把复位后的状态以 transition:none 提交
+                    /* 同步摘掉，不等 rAF：万一下一帧没来（后台标签页 rAF 会被挂起），
+                       这个类会一直留着，把 proc 这一组元素的过渡永久关死，下次就播不动了。
+                       此时样式已经提交，摘掉它只是把过渡能力还回去，不会触发任何补间。 */
+                    root.classList.remove("proc-reset");
+                }
+                if (!("IntersectionObserver" in window)) { whenReady(); return; }
+                /* 同时盯时间轴和图片行，两个都彻底离开视口才复位 ——
+                   只盯时间轴的话，往回滚一点点（图片明明还在屏幕上）就会重播，很跳。
+                   threshold 0 = 必须一个像素都不剩，天然带迟滞：小幅来回滚不会反复重播。 */
+                const visible = new Set();
+                const io = new IntersectionObserver(function (entries) {
+                    for (let i = 0; i < entries.length; i++) {
+                        if (entries[i].isIntersecting) visible.add(entries[i].target);
+                        else visible.delete(entries[i].target);
+                    }
+                    if (visible.size > 0) { if (!started) whenReady(); }
+                    else reset();
+                }, { threshold: 0 });
+                io.observe(process || row);
+                io.observe(row);
+            }
+
             function renderDetail(id) {
                 const page = document.getElementById(id);
                 const content = page.querySelector(".detail-content");
@@ -2246,7 +2640,7 @@
                     content.innerHTML = galleryMarkup(id, galleryImages[id]);
                 }
                 /* detail3 顶部大图一定是首屏，index 0 = eager；下面两张接着排 */
-                if (id === "detail3") { content.innerHTML = `<div class="ai-layout"><div class="ai-top-container">${imageTag(aiImages.top, "AI作品", 0)}</div><div class="ai-bottom-row">${aiImages.bottom.map((src, i) => `<div class="ai-bottom-box">${imageTag(src, `AI案例${i + 1}`, i + 1)}</div>`).join("")}</div></div>`; }
+                if (id === "detail3") { content.innerHTML = `<div class="ai-layout"><div class="ai-top-container">${imageTag(aiImages.top, "AI作品", 0)}</div><div class="ai-bottom-row">${aiImages.bottom.map((src, i) => `<div class="ai-bottom-box">${imageTag(src, `AI案例${i + 1}`, i + 1)}</div>`).join("")}</div><div class="ai-full-container">${imageTag(aiImages.full, "AI 通屏作品", aiImages.bottom.length + 1)}</div><div class="ai-process" aria-label="AI 创作流程"><div class="proc-track"><span class="proc-fill"></span></div><ol class="proc-steps">${aiProcessSteps.map((s, i) => `<li style="--i:${i}"><span class="proc-dot">0${i + 1}</span><b class="proc-name">${s[0]}</b><em class="proc-desc">${s[1]}</em></li>`).join("")}</ol></div><div class="ai-proc-row">${aiImages.proc.map((src, i) => `<div class="ai-proc-box">${imageTag(src, `AI 生成结果${i + 1}`, 99 + i)}<span class="proc-pct">0%</span><span class="ai-proc-zoom" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21M11 8v6M8 11h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></div>`).join("")}</div></div>`; bindProcReveal(content); }
                 if (id === "detail4") {
                     content.innerHTML = `<div class="animation-video-layout">${animationVideos.map((src, i) => `<div class="animation-video-card" role="button" tabindex="-1" data-video-src="${escapeHtml(src)}" aria-label="查看动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="${VIDEO_COVER_TIME}"></video></div>`).join("")}</div>`
                         + wideAnimationVideos.map((src, i) => `<div class="animation-wide-video"><div class="animation-video-card animation-video-card--wide" role="button" tabindex="-1" data-video-src="${escapeHtml(src)}" aria-label="查看完整动画视频 ${i + 1}"><video src="${escapeHtml(src)}" muted playsinline preload="metadata" data-cover-time="${VIDEO_COVER_TIME}"></video></div></div>`).join("");
@@ -2283,7 +2677,7 @@
                 /* 占位动画的暂停开关也交给 IO。detail4 是视频卡没有这些容器，
                    选择器选不到就是空集合，observe 一次也不会调，无需分支。 */
                 const sObs = ensureShimmerObserver();
-                if (sObs) content.querySelectorAll(".card-box, .ai-top-container, .ai-bottom-box").forEach(box => sObs.observe(box));
+                if (sObs) content.querySelectorAll(".card-box, .ai-top-container, .ai-bottom-box, .ai-full-container, .ai-proc-box").forEach(box => sObs.observe(box));
                 /* 绑定前后对比滑块拖动 */
                 content.querySelectorAll(".compare-box").forEach(box => {
                     if (box.dataset.bound === "1") return;
