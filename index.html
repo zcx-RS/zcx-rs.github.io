@@ -342,6 +342,12 @@
         .scroll-snap-track{position:relative;width:100%;pointer-events:none;z-index:0;}
         .snap-section{width:100%;height:var(--vh,100vh);scroll-snap-align:start;scroll-snap-stop:always;}
         @media(max-width:768px),(hover:none) and (pointer:coarse){
+            /* ★ 不要把 overscroll-behavior-y:none 写在 html 上。
+               实测（Chromium/CDP 触摸注入）：加在 html 之后触摸滚动直接失效
+               —— 上滑完全不动、只能靠 scrollTo 生效。原来只在 body 上设是对的，
+               二级页的滚动主体虽是视口，但这条规则会连滚动一起吃掉。
+               QQ / 微信内置浏览器对 overscroll-behavior 本就不太买账，
+               真正的兜底是下面 JS 里的 pullGuard（非被动 touchmove + preventDefault）。 */
             body:not(.detail-scroll-mode){overscroll-behavior-y:none;overflow-y:hidden;-webkit-overflow-scrolling:touch;}
             html.home-scroll-snap{scroll-snap-type:none;scroll-behavior:auto;}
             .snap-section{scroll-snap-align:none;scroll-snap-stop:normal;}
@@ -959,6 +965,11 @@
             .card-description span:first-child{margin-right:22px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;}
             .card-arrow{width:18px;height:18px;}
             .detail-page{padding:10px 10px 0;height:100vh;height:100svh;max-height:100vh;max-height:100svh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y;transition:opacity 0.35s cubic-bezier(0.4,0,0.2,1),visibility 0.35s cubic-bezier(0.4,0,0.2,1);}
+            /* ★ 这里千万不要加 overscroll-behavior-y。
+               实测：body 上有这条时，触摸手势会被 body 这个「不能滚的滚动容器」吃掉，
+               视口再也滚不动（CDP 触摸注入下 winY 恒为 0）。
+               html 上加反而没事，但既然 body 这条更致命、且两者都挡不住 QQ 内置浏览器，
+               干脆都不加，统一交给 JS 的 pullGuard。 */
             body.detail-scroll-mode{height:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch;}
             body.detail-scroll-mode .detail-page.active{position:relative;inset:auto;min-height:100vh;min-height:100svh;height:auto;max-height:none;overflow:visible;pointer-events:auto;touch-action:auto;}
             /* 底部留白要盖住「返回标签 64px + 全面屏手势条」，否则最后一行永远压在标签下面 */
@@ -1580,7 +1591,7 @@
             const wideAnimationVideos = ["https://uvd.yupoo.com/zcx-rs/16244030.mp4","https://uvd.yupoo.com/zcx-rs/12421421.mp4"];
 
             const detail1TopRow = [
-                "https://img.alicdn.com/imgextra/i3/3952997314/O1CN01lwJnrgxaHEH1bRyA_!!3952997314.webp",
+                "https://img.alicdn.com/imgextra/i1/3952997314/O1CN01OrT4ZeUfJeB1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01OdUczlwDVIC1bRyA_!!3952997314.webp",
                 "https://img.alicdn.com/imgextra/i2/3952997314/O1CN01ksC0v3vzoPI1bRyA_!!3952997314.webp"
             ];
@@ -2045,7 +2056,7 @@
                 'O1CN01z2M1e923trxi5TvZX_!!3952997314': 359912,
                 'O1CN01QcOZmNTdsvH1bRyA_!!3952997314': 387754,
                 'O1CN01zpgn1V23trxiNKiUb_!!3952997314': 430056,
-                'O1CN01lwJnrgxaHEH1bRyA_!!3952997314': 457714,
+                'O1CN01OrT4ZeUfJeB1bRyA_!!3952997314': 458164,
                 'O1CN01ylZOAPWYBEB1bRyA_!!3952997314': 486334,
                 'O1CN01LNeClPl8cnI1bRyA_!!3952997314': 619904,
                 'O1CN01DIxrTk23trxhpT5nO_!!3952997314': 694990,
@@ -3959,6 +3970,7 @@
                     detailPages.forEach(p => p.classList.remove("active"));
                     page1.classList.remove("hidden");
                     currentPage = "home";
+                    detachDetailPullGuard();
                     document.body.classList.remove("detail-scroll-mode");
                     document.documentElement.style.overflow = "";
                     document.body.style.overflow = "";
@@ -4132,6 +4144,41 @@
 
             document.addEventListener("mousemove", e => { lastMouseX = e.clientX; lastMouseY = e.clientY; }, { passive: true });
 
+            /* ★ 下拉刷新兜底。overscroll-behavior 在少数安卓 WebView / 微信内置浏览器里不生效，
+               在二级页顶部继续往下拖仍会触发整页刷新 —— 用户看到的就是「页面重置、跳回一级页」。
+               这里只在二级页打开期间挂一个非被动 touchmove：手指已在顶部还继续往下拉就吃掉事件，
+               其余情况立刻放行，不影响正常滚动。不在全局常驻是因为
+               非被动 touchmove 会拖慢所有滚动。 */
+            let pullGuardStartY = -1, pullGuardAtTop = false, pullGuardBlocking = false;
+            function pullGuardStart(e) {
+                if (e.touches.length !== 1) { pullGuardStartY = -1; return; }
+                pullGuardStartY = e.touches[0].clientY;
+                /* 起手时记一次是否在顶部：中途再判断会被橡皮筋抖动带偏 */
+                pullGuardAtTop = window.scrollY <= 0;
+                pullGuardBlocking = false;
+            }
+            function pullGuardMove(e) {
+                if (pullGuardStartY < 0 || e.touches.length !== 1) return;
+                /* 只在二级页生效。挂/摘漏了也不会影响到首页手势。 */
+                if (!currentPage || currentPage.indexOf("detail") !== 0) return;
+                /* 原图查看器里要能按住平移，别把手势吃掉 */
+                if (e.target && e.target.closest && e.target.closest(".proc-lightbox")) return;
+                if (!pullGuardAtTop || window.scrollY > 0) return;         // 不在顶部就交还浏览器
+                /* 判定后锁死：一旦确认是「在顶部继续往下拉」，这个手势剩下的部分全部吃掉。
+                   否则拖过阈值后手指一往回走就放行，浏览器又会接手下拉刷新。 */
+                if (e.touches[0].clientY - pullGuardStartY > 4) pullGuardBlocking = true;
+                if (pullGuardBlocking) e.preventDefault();
+            }
+            function attachDetailPullGuard() {
+                if (!isMobile()) return;
+                document.addEventListener("touchstart", pullGuardStart, { passive: true });
+                document.addEventListener("touchmove", pullGuardMove, { passive: false });
+            }
+            function detachDetailPullGuard() {
+                document.removeEventListener("touchstart", pullGuardStart);
+                document.removeEventListener("touchmove", pullGuardMove);
+            }
+
             function showDetail(id) { returningHome = false;
                 /* 手势可能还在收尾，先把手势态收干净：
                    否则残留的 inline transform 会压过 .hidden 的 opacity，返回时整屏错位 */
@@ -4175,6 +4222,7 @@
                 loopActive = false;
                 clearTimers(); if (useBodyDetailScroll) {
                     document.body.classList.add("detail-scroll-mode");
+                    attachDetailPullGuard();
                     document.body.style.height = "auto";
                     document.body.style.overflow = "auto";
                     document.documentElement.style.overflow = "auto";
@@ -4209,6 +4257,7 @@
                 /* 二级页的淡出放到最后才触发（见本函数末尾） */
                 const hideDetailPages = () => detailPages.forEach(p => { p.classList.remove("active"); p.scrollTop = 0; });
                 currentPage = "home";
+                detachDetailPullGuard();
                 document.body.classList.remove("detail-scroll-mode", "ff-dragging");
                 document.body.style.overflow = "";
                 document.documentElement.style.overflow = "";
