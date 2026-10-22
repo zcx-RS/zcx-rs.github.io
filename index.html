@@ -6298,6 +6298,15 @@
                r162+，而 r162 起已不再提供 build/three.min.js，得改成 ES Module + importmap，
                是一笔单独的账。在那之前，保持现状是最稳妥的。 */
             renderer.toneMappingExposure = 1;
+            /* ★ 关掉 three 的着色器诊断（默认是开的）。
+               开着的时候，每个 program 第一次被用到都会同步拉一次 getProgramInfoLog
+               和两条 getShaderInfoLog，再把日志拼成字符串、连同 prefix 一起塞进
+               material.diagnostics —— 这坨东西只在控制台报错时才有用，却挂在首帧上。
+               实测（无头 Edge / SwiftShader）这一项 73ms + 12ms；真机 GPU 大概 5~20ms，
+               但它和其他初始化叠在同一个任务里，开屏那下卡顿正是这么堆出来的。
+               代价只有一个：以后真有材质编译失败，控制台不再打印那段详细日志。
+               要查编译问题时把这一行改回 true 即可，别的地方不受影响。 */
+            renderer.debug.checkShaderErrors = false;
             const canvas = renderer.domElement;
             canvas.className = 'lanyard-canvas';
             canvas.setAttribute('aria-hidden', 'true');
@@ -6373,6 +6382,9 @@
             let strapScale = STRAP_WIDTH;
             let tileRatio = 2;
             let raf = 0, last = performance.now(), time = 0;
+            /* shadersReady = 「所有材质的 program 都编译完了」。在它变成 true 之前，
+               render() 一律不出手 —— 详见文件末尾 resize() 下面那段 warmShaders。 */
+            let shadersReady = false;
             /* onStage = 「用户正停在最后一屏」。和 visible 是两回事：
                page4 是 position:fixed + opacity:0，滚动时它从不离开视口，
                IntersectionObserver 永远报 intersecting（实测停在第一屏时容器 rect
@@ -6561,6 +6573,13 @@
             };
 
             const render = () => {
+                /* ★ 着色器没编译完就先不画。
+                   以前这里是「第一次调用就地编译」：renderer.render 发现 program 不在缓存里，
+                   会当场 compileShader + linkProgram（含 injectFoil 注入的那段大片段着色器），
+                   整个主线程被按住几百毫秒 —— 那一下正好落在加载层淡出之后，
+                   就是你感觉到的「刚加载完卡一下」。
+                   现在首帧的时机交给 warmShaders() 控制，它编译完才会把 shadersReady 置真。 */
+                if (!shadersReady) return;
                 cardGroup.position.copy(sim.body.position);
                 cardGroup.quaternion.copy(sim.body.quaternion);
                 updateBand();
@@ -6608,7 +6627,9 @@
             };
 
             const start = () => {
-                if (raf || !visible || !onStage || !alive) return;
+                /* shadersReady 也进条件：编译没完成时就算跑到最后一屏也别起这个循环，
+                   否则 tick 会空转一路 requestAnimationFrame，而 render() 什么都不画。 */
+                if (raf || !visible || !onStage || !alive || !shadersReady) return;
                 sim.calm = 0; sim.idle = 0; last = performance.now();
                 raf = requestAnimationFrame(tick);
             };
@@ -6753,6 +6774,38 @@
 
             resize();
 
+            /* ══ 着色器预热 ══════════════════════════════════════════════════
+               这一段是整个「刚加载完卡一下」的正面回答。
+               原来是：resize() → apply() → render() → 里面 5 个材质的 program 全在
+               缓存里找不到 → 当场编译 6 份着色器（front/back 那两份还被 injectFoil
+               塞进去了整段箔膜 GLSL，有 3×3 循环和嵌套 grating）→ 主线程按住不放。
+               实测（无头 Edge / 1440x900 / 冷缓存）：长任务 669ms，其中 V8 采样里
+               `(program)` 一项就占 720ms 的 self time —— 全部落在加载层淡出后 350ms 处，
+               也就是你眼睛看到的「加载完了，然后卡一下」。
+               现在做两件事：
+               1) 用 renderer.compileAsync：浏览器有 KHR_parallel_shader_compile 时，
+                  驱动在自己的线程里编译，three 每 10ms 轮询一次完成状态（setTimeout，
+                  每次只花几百微秒），主线程不再被一次性按住几百毫秒；
+                  没有这个扩展（老 Safari / 少数 ANGLE 配置）就退回同步 compile，
+                  行为和改之前完全一样，只是不再由首帧顺手触发。
+               2) 编译完成前 render() 不画、start() 不转循环（见上面两处 guard），
+                  所以「首帧」不会偷偷把编译提前，也不会画出半成品。
+               ══════════════════════════════════════════════════════════════ */
+            const warmShaders = () => {
+                if (shadersReady || !alive) return;
+                const finish = () => {
+                    if (shadersReady || !alive) return;
+                    shadersReady = true;
+                    render();      /* 这一帧才是真的首帧：program 全部就绪，不再阻塞 */
+                    start();       /* 如果用户此刻已经停在最后一屏，把物理循环拉起来 */
+                };
+                try {
+                    if (typeof renderer.compileAsync === 'function') renderer.compileAsync(scene, camera).then(finish, finish);
+                    else { renderer.compile(scene, camera); finish(); }
+                } catch (e) { finish(); }   /* compileAsync 抛异常也别把吊牌卡死 */
+            };
+            warmShaders();
+
             /* 重新播放入场动画：把吊牌重置到侧面 + 90° 旋转，靠重力摆回原位。
                每次进入最后一屏时调用，重现「掉落」效果。 */
             const replayIntro = () => {
@@ -6885,10 +6938,31 @@
                 if (handle && handle.setActive) handle.setActive(wasActive);
             }
         }
+        /* ★ 什么时候挂 —— 原来 three 一到就挂，改成看时机
+           boot() 那套初始化有一次 60~80ms 的同步开销：建 WebGL context、
+           PMREMGenerator 烘一张环境贴图、画两张 1024 宽的面板 canvas、
+           再创建 6 份 program（front/back 那两份还带着 injectFoil 注入的大片段着色器）。
+           着色器编译本身已经交给驱动线程了（见工厂里的 compileAsync），
+           但前面这几步只能同步做 —— 落在动画进行中就是掉几帧。
+           所以分两种情况：
+           · 加载层还盖着（没有 fade-out）→ 立刻挂，用户本来就看不见后头在干嘛；
+           · 加载层已经淡出 → 首屏正在演入场动画，推迟 1.1s 再挂。
+             这个 1.1s 是量出来的：fade-out 之后每 120ms 采样一次
+             document.getAnimations()，条数从 17 → 13 → 8 → 5（常驻的背景循环），
+             到 ~650ms 这批入场动画就全部收尾了。留到 1.1s 挂，
+             等于把建场景的 60~80ms 花在「画面本来就不动」的时候 ——
+             静止画面上占住主线程，用户看不出来；动画中占，就是一顿。
+           两条路都走 boot()，里面有 __mounted 去重，重复调用没有副作用。 */
+        function queueBoot() {
+            var overlay = document.getElementById('loading-overlay');
+            var covered = !overlay || !overlay.classList.contains('fade-out');
+            if (covered) { boot(); return; }
+            window.setTimeout(boot, 1100);
+        }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
         else boot();
         /* three 是懒加载的，到得比这里晚：它一就绪就再试一次（boot 内有 __mounted 去重） */
-        window.addEventListener('three-ready', boot);
+        window.addEventListener('three-ready', queueBoot);
     })();
     </script>
 
