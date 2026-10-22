@@ -518,6 +518,21 @@
         .page2,.page4{position:fixed;inset:0;z-index:25;background:var(--bg);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s ease;will-change:opacity;contain:layout style paint;}
         .page2.active,.page4.active{opacity:1;pointer-events:auto;}
         .page4{z-index:35;transition:opacity 0.5s ease;contain:layout style;}
+        /* ★ 最后一屏的离场：不淡出，直接消失。
+           这一屏是浅底 + 正中间一块高对比的 3D 工牌，和上一屏（四列卡片）几乎同时切 class。
+           原来是 0.5s 交叉淡出 —— 实测切 class 后 94ms，page4 还有 0.643、page3 已经 0.741，
+           两层各七成不透明叠在一起，就是「重」的来源。
+           中途试过两条路，都不够干净：
+             · 把离场压到 0.16s + ease-out：94ms 时 page4 还剩 0.029，仍然能看见一层薄影；
+             · 再让 page3 晚 90ms 进场（错峰）：确实不叠了，但中间空出一段，
+               而且多了一套 body.from-final 状态要维护。
+           既然两屏背景都是 var(--bg)=#d7d6d2，中间露出来的是同色底，不存在闪白/闪黑，
+           那最简单也最干净的答案就是「切」：page4 当场归零，page3 立刻从 0 往上淡入。
+           观感是「工牌一拍消失 → 卡片从下面推上来」，两边零重叠。
+           入场仍是原来的 0.5s ease，不动 —— 工牌落下来那段的节奏是你调过的。
+           注：`:not(.active)` 特异性 (0,2,0) 高于 `.page4` (0,1,0)，
+           所以这条只管「离开」，不用改上面那行。 */
+        .page4:not(.active){transition:none;}
         .splash-wrapper{display:flex;align-items:flex-start;justify-content:center;}
         .splash-title{font-size:clamp(5rem,16vw,14rem);font-weight:750;letter-spacing:0.06em;color:#0a0a0a;line-height:1;user-select:none;}
         .year-tag{font-size:clamp(1.1rem,1.9vw,1.5rem);font-weight:550;letter-spacing:0.06em;color:#3a3a3a;user-select:none;opacity:0.85;line-height:1;white-space:nowrap;margin-left:clamp(0.3rem,0.8vw,0.6rem);margin-top:0.35em;}
