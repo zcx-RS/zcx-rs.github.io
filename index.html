@@ -417,7 +417,12 @@
         /* 背景必须实色：这一层盖在 .page1(z-index:20) 之上，透明的话
            在 0↔1 屏切换的交叠期，卡片之间的空隙和四周留白会漏出首页的大标题、导航和页脚。
            .page2/.page3/.page4 用的都是 background:var(--bg)，这里保持一致 */
-        .page-work{position:fixed;inset:0;z-index:22;pointer-events:none;opacity:0;transition:opacity 0.5s ease;will-change:opacity;display:flex;align-items:center;justify-content:center;background:var(--bg);}
+        /* 整页淡入淡出的时长收到 0.4s、换成全站那条曲线：
+           原来 0.5s + ease，卡片入场（0.66s）有一半是在半透明页面上演的，看着发虚。
+           现在卡片在整页约八成不透明时才起跳，层次才看得出来。
+           contain: 把这一屏的绘制 / 布局隔离成独立子树 —— 里面任何改写都只作废
+           自己这一层，不会牵动其余四屏；page2 / page4 本来就是这么写的。 */
+        .page-work{position:fixed;inset:0;z-index:22;pointer-events:none;opacity:0;transition:opacity 0.4s cubic-bezier(0.22,1,0.36,1);will-change:opacity;contain:layout style paint;display:flex;align-items:center;justify-content:center;background:var(--bg);}
         .page-work.active{opacity:1;pointer-events:auto;}
         .page-work .work-container{width:100%;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:center;padding:2.5vh clamp(16px,3vw,30px);}
         .work-cards-column{display:flex;flex-direction:column;gap:2vh;width:100%;height:100%;}
@@ -444,33 +449,33 @@
         .meta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
         .role-title{font-size:clamp(1.1rem,1.8vw,1.4rem);font-weight:500;color:rgb(255,140,66);opacity:0.9;letter-spacing:0.02em;transition:opacity 0.3s,letter-spacing 0.3s;}
         .work-card:hover .role-title{opacity:1;letter-spacing:0.04em;}
-        .year-small{font-size:0.9rem;font-weight:500;color:#1f1f1f;background:rgba(0,0,0,0.065);padding:3px 12px;border-radius:14px;border:1px solid rgba(0,0,0,0.06);}
+        /* 年份标签用等宽数字：翻滚时每一位宽度一致，标签不会左右抖 */
+        .year-small{font-size:0.9rem;font-weight:500;color:#1f1f1f;background:rgba(0,0,0,0.065);padding:3px 12px;border-radius:14px;border:1px solid rgba(0,0,0,0.06);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1;}
         .divider-line{width:50px;height:2px;background:rgba(0,0,0,0.12);border-radius:1px;margin:0.5vh 0 1.2vh;transition:width 0.35s,background 0.35s;}
         .work-card:hover .divider-line{width:80px;background:rgb(255,140,66);}
         .desc-text{--fd:230ms;font-size:clamp(1rem,1.4vw,1.15rem);line-height:1.65;color:#3a3a3a;max-width:700px;text-align:justify;text-align-last:left;text-justify:inter-ideograph;word-break:break-all;transition:color 0.3s,opacity 0.42s cubic-bezier(0.22,1,0.36,1),transform 0.42s cubic-bezier(0.22,1,0.36,1);}
         .work-card:hover .desc-text{color:#222;}
 
-        /* ★ 字段级入场：卡片本体上滑落位只是「卷轴到位」，真正的「叙事」在字段。
-           ★ 关键修正：CSS transition 的 duration/delay 取的是「变化之后的那份样式」，
-           所以 stagger 延迟必须写在 reveal 之后的状态上。原先写在 .field-pending（初始态）
-           上，结果延迟只在 reset 时生效、reveal 时一律为 0 —— 六个字段同时淡入，
-           像一次性贴图贴上去，这正是「死板」的根源。
-           现在：reveal 的瞬间给卡片挂 .revealing 提供延迟，跑完立刻摘掉，
-           之后 hover 的颜色 / 位移不会被误延迟。
-           各字段动效通道：opacity(淡入) + transform(上滑) + 字距 / scaleX(分隔线)，
+        /* ★ 卡内字段的基础 transition（2026-10-22 起只服务 hover）。
+           ★ 字段入场早已不靠 CSS transition 了 —— 现在由 playWorkCards 的 GSAP timeline
+           按元素分组给延迟（一个时钟、一条曲线），入场期间这些 transition 被
+           .work-card[data-gsap] 整块掐掉，不会跟 GSAP 抢同一个属性。
+           hover 的通道保留：color / letter-spacing / width / box-shadow。
            缓动统一 cubic-bezier(0.22,1,0.36,1)：曲线一致才是高级感的来源，
            没有任何 spring / bounce，不会「撞限位 + 回弹」 */
-        .company-name{--fd:30ms;transition:opacity 0.42s cubic-bezier(0.22,1,0.36,1),transform 0.42s cubic-bezier(0.22,1,0.36,1),letter-spacing 0.56s cubic-bezier(0.22,1,0.36,1);}
-        .role-title{--fd:95ms;transition:opacity 0.42s cubic-bezier(0.22,1,0.36,1),letter-spacing 0.3s,transform 0.42s cubic-bezier(0.22,1,0.36,1);}
-        .year-small{--fd:145ms;transition:opacity 0.42s cubic-bezier(0.22,1,0.36,1),transform 0.42s cubic-bezier(0.22,1,0.36,1);}
+        .company-name{transition:opacity 0.42s cubic-bezier(0.22,1,0.36,1),transform 0.42s cubic-bezier(0.22,1,0.36,1),letter-spacing 0.56s cubic-bezier(0.22,1,0.36,1);}
+        .role-title{transition:opacity 0.3s,letter-spacing 0.3s;}
         /* width 的过渡要留着 —— hover 时分隔线 50px→80px 靠它；
-           入场改用 scaleX，两者互不干扰 */
-        .divider-line{--fd:185ms;transition:width 0.35s,transform 0.52s cubic-bezier(0.22,1,0.36,1),background 0.35s;transform-origin:0 50%;}
-        .year-watermark{--fd:80ms;transition:color 0.35s,opacity 0.62s cubic-bezier(0.22,1,0.36,1),transform 0.62s cubic-bezier(0.22,1,0.36,1);}
+           入场改由 GSAP 做 scaleX，两者互不干扰 */
+        .divider-line{transition:width 0.35s,background 0.35s;transform-origin:0 50%;}
+        .year-watermark{transition:color 0.35s,transform 0.5s cubic-bezier(0.22,1,0.36,1);}
 
-        /* 初始态（reveal 前）：opacity:0 + 微偏移。
-           分隔线改用 scaleX 而不是 width —— 改宽度每帧都要重排，scaleX 走合成器。
-           公司名字距从 0.1em 收紧到 -0.01em：字「被写上去、再锁死」的感觉 */
+        /* ── 以下 .field-pending / .revealing 是 2026-10-22 之前的字段入场方案，
+              已不再被任何 JS 添加（现在只有 .pre-roll 还在用，作为首屏加载前的静态隐藏态）。
+              保留规则是为了不改动 hover 依赖的基础 transition，别再往上加新的挂载点。 ── */
+
+        /* 旧的隐藏初始态（opacity:0 + 微偏移），现在没有 JS 会加这个 class，
+           留着只为「万一别处还在用」不至于把内容摆错位；新代码请用 GSAP 的 fromTo。 */
         .field-pending{opacity:0;}
         .company-name.field-pending{transform:translateY(15px);letter-spacing:0.1em;}
         .role-title.field-pending{transform:translateY(11px);}
@@ -480,9 +485,7 @@
         /* 水印初始态要保留原有 translateY(-50%) 的纵向居中，只叠加 X 偏移 + 微缩 */
         .year-watermark.field-pending{opacity:0;transform:translateY(-50%) translateX(48px) scale(0.93);}
 
-        /* stagger：字段自身节奏 --fd 叠加卡片自身 --card-delay。
-           顺序：company-name → watermark → role-title → year-small → divider → desc-text，
-           「主体」先立，「细节」后落 —— 和卷轴落位「先有形、后有神」的视觉直觉吻合 */
+        /* 旧的 stagger 挂载点（同样已不再被添加） */
         .work-card.revealing .company-name,
         .work-card.revealing .role-title,
         .work-card.revealing .year-small,
@@ -491,18 +494,13 @@
         .work-card.revealing .year-watermark{transition-delay:calc(var(--fd,0ms) + var(--card-delay,0ms));}
 
         @media (max-width:768px),(hover:none) and (pointer:coarse){
-            /* 移动端 stagger 整体压缩：时长从 0.42s 收到 0.34s、卡片间隔从 110ms 收到 60ms，
-               总时间压到 ~700ms —— 触控用户对长动画耐心更低，宁可快一点也不拖沓 */
-            .work-card{--card-step:60ms;}
-            .company-name,.role-title,.year-small,.desc-text{transition-duration:0.34s;}
+            /* 移动端的入场节奏现在在 playWorkCards 里按 isMobile() 换一套参数
+               （卡片 0.50s / 卡片间隔 55ms / 字段间隔 35ms，整体 ~700ms）——
+               触控用户对长动画耐心更低，宁可快一点也不拖沓。
+               这里只留 hover/active 那点基础过渡的时长。 */
+            .company-name,.role-title,.desc-text{transition-duration:0.34s;}
             .divider-line{transition-duration:0.4s;}
             .year-watermark{transition-duration:0.5s;}
-            .company-name{--fd:20ms;}
-            .year-watermark{--fd:50ms;}
-            .role-title{--fd:60ms;}
-            .year-small{--fd:95ms;}
-            .divider-line{--fd:120ms;}
-            .desc-text{--fd:150ms;}
         }
 
         @media (min-width:769px){
@@ -567,6 +565,11 @@
            GSAP 每帧写 inline transform / opacity，卡片上这条 CSS transition 会把每一帧
            再平滑一次 —— 动画整体慢半拍、收尾拖泥带水。所以进场期间挂 data-gsap 掐掉它。 */
         .minimal-card[data-gsap]{transition:none!important;}
+        /* 工作经历三张卡同理（见 playWorkCards）：入场 / 摆位期间，
+           卡片本体和卡内所有字段的 CSS transition 全部掐掉，
+           否则每帧写 inline transform 都会被再平滑一次，动画慢半拍、一卡一卡。
+           只在动画期间挂，收尾时摘掉 —— hover 的颜色 / 位移过渡照旧生效。 */
+        .work-card[data-gsap],.work-card[data-gsap] *{transition:none!important;}
 
         /* 曲线统一到 cubic-bezier(0.22,1,0.36,1)，并把缩放拉得比淡入长一截
            （0.45s → 0.62s）：先看清字，再让整块「坐实」，收尾更稳。
@@ -2917,105 +2920,158 @@
             document.addEventListener("keydown", e => { if (e.key === "Escape" && animationModal.classList.contains("active") && !theaterActive) closeAnimationModal(); });
 
             const workCards = document.querySelectorAll(".work-card");
-            let workAnims = [];
-
             const reducedMotionQ = matchMedia("(prefers-reduced-motion: reduce)");
 
-            /* ★ 卡片上的「指针跟随的暖色光斑」已按用户要求整块移除（2026-10-03）。
-               原来是配套的四个部分，必须一起删：
-                 ① .card-glow 的 CSS（含 :hover 点亮）
-                 ② decorateWorkCards()：往每张 .work-card 里注入那个 div
-                 ③ bindCardGlow()：pointermove + rAF，把 div 挪到光标位置
-                 ④ resetCardGlow()：重置 / 跨屏掠过时取消它的动画
-               只删一半会留下「看不见的空 div」或「找不到目标的 rAF 空转」。
-               ★ 刻意保留：.work-card:hover 的暖色边框（rgba(255,140,66,...)）——
-                 那是静态描边，不是跟随效果。 */
+            /* ══════════════════════════════════════════════════════════════
+               工作经历屏（第 1 屏）三张卡的入场 / 退场 —— 2026-10-22 整体重写
+               ──────────────────────────────────────────────────────────────
+               原来这一屏是三套动画系统同时跑：
+                 ① WAAPI card.animate() 跑 30 帧手采样曲线 —— 卡片本体
+                 ② CSS transition + .field-pending / .revealing —— 卡内字段
+                 ③ 手搓 rAF 数字翻滚 —— 年份小标签
+               三套各有各的时钟和延迟，靠「双 rAF + setTimeout」对齐，问题就出在这儿：
 
-            /* 字段级入场：每个字段的初始态都用 .field-pending class 表达，
-               reveal 时移除 class，CSS transition 按各自 delay 自动到位。
-               stagger 节奏写在 CSS 里，JS 只负责「开关」—— 节奏稳定、可调一次改一处 */
-            const WORK_FIELD_SELECTOR = ".company-name,.role-title,.year-small,.divider-line,.desc-text,.year-watermark";
-            function setWorkFieldsPending(card, pending) {
-                card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => {
-                    el.classList.toggle("field-pending", pending);
-                });
-                /* 年份小标签的数字翻滚还原：把目标文本锁到 dataset，
-                   后续 reveal 时重新初始化，reset 时直接还原到原文 */
-                const yearSmall = card.querySelector(".year-small");
-                if (yearSmall && !yearSmall.dataset.final) yearSmall.dataset.final = yearSmall.textContent;
-                if (yearSmall && pending) yearSmall.textContent = yearSmall.dataset.final;
+               · 离开这一屏时，翻页走到一半（50%）syncHomeSection 就把卡片直接
+                 打回隐藏态，可 .page-work 整页淡出还要 0.5s —— 中间那两百多毫秒
+                 页面还在、内容已经没了，看着就是「白屏闪一下」。
+               · 跨屏掠过时 showWorkCardsInstantly() 只停了翻滚的 rAF，没把文本还原，
+                 于是年份标签会留一串翻滚到一半的随机数字（乱码）。
+               · 卡片本体 395ms 就跑完，而整页淡入要 500ms —— 入场有一半是在
+                 半透明的页面上演的，看着「发虚、没层次」，谈不上好看。
+
+               现在统一交给 GSAP 一条 timeline 编排（page3 的四张卡本来就是这么做的），
+               全站一套缓动曲线；CSS 只留两件事：静态隐藏态（.pre-roll，防首屏闪烁）
+               和 hover 用的基础 transition。字段的 stagger 也不再靠 CSS transition-delay，
+               全部由 timeline 的位置参数给 —— 一个时钟，一条曲线，不会有对不齐的帧。
+               ══════════════════════════════════════════════════════════════ */
+
+            /* 卡内参与编排的元素。注意用的是 .meta-row 整块，而不是里面的
+               .role-title / .year-small 两个子元素 —— 让它们各自的 CSS transition
+               完全不参与入场，只留给 hover。 */
+            const WORK_FIELD_TARGETS = ".year-watermark,.company-name,.meta-row,.divider-line,.desc-text";
+
+            /* 年份小标签的最终文案：脚本启动时就锁进 dataset.final。
+               以前是「第一次 resetWorkCards 里见到什么就存什么」，一旦在翻滚途中
+               被重置，存下来的就是一串随机数字 —— 之后每次还原都是乱码。 */
+            workCards.forEach(card => {
+                const y = card.querySelector(".year-small");
+                if (y) y.dataset.final = y.textContent.trim();
+            });
+
+            let workTimeline = null;
+            let workResetTimer = 0;
+            let workSnapToken = 0;
+
+            function clearWorkResetTimer() { if (workResetTimer) { clearTimeout(workResetTimer); workResetTimer = 0; } }
+            function killWorkTimeline() { if (workTimeline) { workTimeline.kill(); workTimeline = null; } }
+
+            function workFieldEls(card) { return Array.from(card.querySelectorAll(WORK_FIELD_TARGETS)); }
+
+            /* 翻滚还原：不论从哪一帧被打断，文本都必须回到最终值 —— 这是「年份乱码」的根治点。
+               三张卡各有一条独立 rAF（句柄挂在元素上），不会互相 cancel。 */
+            function restoreYearText(card) {
+                const y = card.querySelector(".year-small");
+                if (!y) return;
+                stopYearRoll(y);
+                if (y.dataset.final) y.textContent = y.dataset.final;
             }
 
-            /* 翻滚的起止态交给 .pre-roll 这个 class；动画结束后清空全部 inline 样式，
-               把控制权还回 CSS —— 否则残留的 transform 会永久压掉 :hover / :active */
-            function clearCardInlineStyles(card) {
-                card.style.opacity = "";
-                card.style.transform = "";
-                card.style.willChange = "";
+            /* 清掉 GSAP 留在卡片和字段上的内联 transform / opacity，把控制权还给 CSS。
+               不清的话：残留的 inline transform 会永久压掉 :hover / :active，
+               卡片再也没有悬停反馈。 */
+            function clearWorkInline(card) {
+                const g = window.gsap;
+                if (!g) return;
+                const targets = [card].concat(workFieldEls(card));
+                g.killTweensOf(targets);
+                g.set(targets, { clearProps: "transform,opacity,transformOrigin,transformPerspective" });
             }
-            let revealTimers = [];
-            function clearRevealTimers() { revealTimers.forEach(clearTimeout); revealTimers = []; }
 
+            /* 「禁过渡 → 摆位 → 恢复过渡」：所有瞬时摆位都走这一步。
+               data-gsap 上挂了 transition:none!important（与 page3 的 minimal-card 同一套做法），
+               否则这次的属性改写会被入场 / hover 用的 CSS transition 拖成一段动画 ——
+               那正是「一卡一卡」的来源。
+               token 用来防抢：摆位后两帧内如果又起了新动画，就别把它的 data-gsap 摘掉。 */
+            function snapWorkCards(fn) {
+                const token = ++workSnapToken;
+                workCards.forEach(c => c.setAttribute("data-gsap", ""));
+                fn();
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if (token !== workSnapToken) return;
+                    workCards.forEach(c => c.removeAttribute("data-gsap"));
+                }));
+            }
+
+            /* 回到「等入场」的隐藏态：三张卡停在 .pre-roll（opacity 0 + 下移 215px），
+               年份文本还原成最终值，内联样式全部清掉 —— 下次进这屏能完整重播。
+               ★ 只在页面真的看不见的时候调用（初始化 / 整页淡出结束之后），
+                 不要在半透明阶段调用，否则会被看见「内容凭空消失」。 */
             function resetWorkCards() {
                 cancelWorkReveal();
-                clearRevealTimers();
-                /* 关掉所有仍在跑的数字翻滚 rAF，免得跨屏来回切时残留「半截数字」。
-                   翻滚句柄挂在元素上，三张卡各自独立，不会互相 cancel */
-                workCards.forEach(card => stopYearRoll(card.querySelector(".year-small")));
-                workAnims.forEach(a => a.cancel());
-                workAnims = [];
-                /* ★ 从「终态可见」切回「隐藏态」前，先把字段 transition 掐成 none：
-                   否则字段（company-name / desc-text 等）带着 0.42s 的 transition 从
-                   可见态「淡出」回 .field-pending 的隐藏态，这段多余的过渡会跟随后
-                   card.animate() 的入场动画（fill:backwards + delay）叠加，
-                   造成「回顶后再滚到工作经历页，三张卡入场一卡一卡的」。
-                   这里瞬时切回隐藏态，再双 rAF 恢复 transition，和 showWorkCardsInstantly
-                   用的是同一套「禁过渡→摆位→恢复过渡」的手势。 */
-                workCards.forEach(card => {
-                    card.classList.add("pre-roll");
-                    card.classList.remove("revealing");
-                    clearCardInlineStyles(card);
-                    card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => { el.style.transition = "none"; });
-                    setWorkFieldsPending(card, true);
-                });
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    workCards.forEach(card => card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => { el.style.transition = ""; }));
-                }));
-            }
-
-            /* 路过工作经历屏（跨屏跳转中途掠过 / 回顶滑过）时，卡片直接摆到终态。
-               平时三张卡停在 pre-roll / field-pending 隐藏态等入场动画，
-               路过时若不摆到终态，这屏就是一整片空白 —— 跨屏跳转和回顶都踩过这个坑。
-               和 resetWorkCards 的区别：不播动画、禁过渡瞬移到最终状态，
-               双 rAF 后再恢复过渡，避免恢复瞬间被看到「从隐藏态飞进来」的残影。
-               只是路过、不算到访 —— 之后真正停到这一屏时，入场动画照常完整播放。 */
-            function showWorkCardsInstantly() {
-                cancelWorkReveal();
-                clearRevealTimers();
-                workCards.forEach(card => stopYearRoll(card.querySelector(".year-small")));
-                workAnims.forEach(a => a.cancel());
-                workAnims = [];
-                workCards.forEach(card => {
-                    card.classList.remove("pre-roll", "revealing");
-                    clearCardInlineStyles(card);
-                    card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => {
-                        el.style.transition = "none";
-                        el.classList.remove("field-pending");
+                clearWorkResetTimer();
+                killWorkTimeline();
+                snapWorkCards(() => {
+                    workCards.forEach(card => {
+                        restoreYearText(card);
+                        card.classList.add("pre-roll");
+                        card.classList.remove("revealing");
+                        clearWorkInline(card);
                     });
                 });
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                    workCards.forEach(card => card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => { el.style.transition = ""; }));
-                }));
+            }
+
+            /* 掠过这屏（跨屏跳转中途 / 回顶滑过）：不播动画、直接摆终态，
+               否则这一屏是一整片空白 —— 跨屏跳转和回顶都踩过这个坑。
+               ★ 必须连年份文本一起还原：漏了这一步，掠过时年份标签会留一串乱码。 */
+            function showWorkCardsInstantly() {
+                cancelWorkReveal();
+                clearWorkResetTimer();
+                killWorkTimeline();
+                snapWorkCards(() => {
+                    workCards.forEach(card => {
+                        restoreYearText(card);
+                        card.classList.remove("pre-roll", "revealing");
+                        clearWorkInline(card);
+                    });
+                });
+            }
+
+            /* ★ 离开这屏：桌面端「什么都不做」—— 卡片保持终态，跟着整页淡出一起走完。
+               ★ 这里曾经是 resetWorkCards()（先是离开瞬间就复位，后来改成延时 460ms 复位），
+                 两个版本都有同一个代价：复位会改写卡片和卡内元素，等于把这一整屏的
+                 绘制结果作废。而它此刻是不可见的（opacity 0 / 移出视口），浏览器
+                 不会马上重绘 —— 等回顶时整屏滑到它面前，才在那一帧现场光栅化，
+                 正好砸在「滑到工作经历」的那一下上。这就是卡顿的来源。
+                 ★ 真正的复位改到「重新进入这屏」的瞬间做（那时整页还看不见），
+                   见 syncHomeSection 里的 resetWorkCards()。
+                 ★ 入场动画没播完就离开也没关系：timeline 会自己跑完（≤0.4s），
+                   正好落在整页淡出的窗口里，比中途打断再摆位平滑得多。 */
+            function exitWorkCards() {
+                /* 极端情况：刚进这屏 160ms 内又被翻走（入场还在排队还没起跳），
+                   此时卡片还停在隐藏态。直接摆终态让它跟着淡出，别把空白页推出去。 */
+                if (workRevealTimer) { cancelWorkReveal(); showWorkCardsInstantly(); }
+                clearWorkResetTimer();
+                /* 移动端例外：手机上不存在「连续整屏滑行掠过中间几屏」这条路，
+                   卡片被看见的时间窗口不一样，回到这屏时再隐藏反而会露馅，
+                   所以仍旧延时复位一次。 */
+                if (!isMobile()) return;
+                workResetTimer = window.setTimeout(() => { workResetTimer = 0; resetWorkCards(); }, 460);
+            }
+
+            /* 掠过这屏之前只做一次极廉价的检查：只有当卡片真的还停在隐藏态
+               （首屏加载后从没进过这屏）时才摆一次终态；否则一个属性都不碰 ——
+               碰了就会让整屏的绘制结果作废，掠过时现场重绘，那就是「卡一下」。 */
+            function ensureWorkCardsVisible() {
+                for (let i = 0; i < workCards.length; i++) {
+                    if (workCards[i].classList.contains("pre-roll")) { showWorkCardsInstantly(); return; }
+                }
             }
 
             /* 「0000 → 2021」的数字翻滚：借鉴 page2 老虎机的延迟锁定位算法，
-               但只跑一次（~540ms）—— 一进工作经历屏，每个年份标签都做一次这种
+               但只跑一次（~520ms）—— 一进工作经历屏，每个年份标签都做一次这种
                「咔哒咔哒」地落定，让用户感受到「时间在写入这张卡片」。
-               所有位用同一根 cubic ease-out 减速，开始快、收尾近乎静止，
-               末位锁定的瞬间整个标签静止在最终值 —— 不抖、不回弹 */
-            /* 每个年份标签一条独立的 rAF（句柄挂元素上）：
-               原来共用一个全局句柄，三张卡的翻滚会互相 cancel，
-               结果只有最后一张在滚 —— 少了一层「依次写入」，也是整体发闷的原因之一 */
+               所有位用同一根 ease-out 减速，开始快、收尾近乎静止，
+               末位锁定的瞬间整个标签静止在最终值 —— 不抖、不回弹。 */
             function stopYearRoll(el) {
                 if (el && el.__rollRaf) { cancelAnimationFrame(el.__rollRaf); el.__rollRaf = 0; }
             }
@@ -3029,14 +3085,13 @@
                 const chars = finalText.split("");
                 const pools = chars.map(c => {
                     if (c >= "0" && c <= "9") return "0123456789".split("");
-                    if (c === "–" || c === "—" || c === "-" || c === "·" || c === " ") return [c];
                     return [c];
                 });
                 const positions = pools.map(pool => Math.floor(Math.random() * pool.length));
                 const locked = Array(chars.length).fill(false);
                 let lockIdx = 0;
                 const startTime = performance.now();
-                const duration = 540;
+                const duration = 480;
                 stopYearRoll(el);
 
                 function tick() {
@@ -3080,7 +3135,7 @@
             }
 
             /* 数字落定的「咔哒」确认：只动 background / box-shadow，不动 transform，
-               避免和字段入场正在跑的 transform 过渡打架 */
+               避免和字段入场正在跑的 transform 补间打架 */
             function flashYearLock(el) {
                 if (reducedMotionQ.matches) return;
                 el.animate([
@@ -3089,77 +3144,13 @@
                 ], { duration: 460, easing: "cubic-bezier(0.22,1,0.36,1)", fill: "none" });
             }
 
-            /* 双 rAF reveal：先 commit 一次初始态（带 .field-pending 的样式生效），
-               下一帧再移除 —— 否则「先写样式后立即读」的同帧操作会被浏览器合并，
-               transition 不会触发。Stagger 节奏由 CSS transition-delay 决定，
-               这里只负责把开关打开 */
-            function revealWorkFields() {
-                const mobile = isMobile();
-                const REVEAL_WINDOW = mobile ? 720 : 1080;
-                const cardStep = mobile ? 55 : 95;
-                workCards.forEach((card, i) => {
-                    /* 先挂 .revealing（延迟由它提供），再摘 .field-pending ——
-                       同一帧内改完，浏览器算出来的「变化后样式」就同时带上了目标值和延迟，
-                       stagger 才会真正生效。动画跑完再把 .revealing 摘掉，
-                       否则后续 hover 的颜色 / 位移也会被这段延迟拖住 */
-                    card.classList.add("revealing");
-                    card.querySelectorAll(WORK_FIELD_SELECTOR).forEach(el => el.classList.remove("field-pending"));
-                    revealTimers.push(window.setTimeout(() => card.classList.remove("revealing"), REVEAL_WINDOW));
-                    /* 数字翻滚：移动端直接显示（触控场景下不需要这种「逐位写入」的细节），
-                       桌面端按卡片自己的节奏依次起跳，三张卡「咔哒咔哒」先后落定。
-                       时长 540ms 比卡片本体略长，刚好在卡片落位后收尾 */
-                    if (!mobile) {
-                        const yearSmall = card.querySelector(".year-small");
-                        if (yearSmall) revealTimers.push(window.setTimeout(() => tweenYearSmall(yearSmall), i * cardStep + 60));
-                    }
-                });
-            }
-
-            /* 纯直落：只有纵向位移 + 淡入，不做透视/旋转/缩放/横移。
-               单一 ease-out 3.4 次，速度单调衰减、尾段趋近于零 ——
-               没有「撞限位 + 回弹」的速度突变，也没有廉价的弹跳。
-               三张卡靠时长差依次停稳，悬念感来自「依次停」，不来自回弹。
-               全程密集采样 + linear，把自定义曲线喂给合成器，
-               跑在 transform/opacity 上不掉帧 */
-            function buildWorkRoll(offsetY) {
-                const STEPS = 30;
-                const frames = [];
-                for (let i = 0; i <= STEPS; i++) {
-                    const t = i / STEPS;
-                    /* ease-out 3.4 次：起手有冲劲、收尾近乎静止，速度连续无 jerk */
-                    const e = 1 - Math.pow(1 - t, 3.4);
-                    const y = offsetY * (1 - e);
-                    /* 前 32% 淡入，带轻微 ease-in，避免一开场就糊脸；
-                       之后保持全不透明 —— 卷轴滚动时内容应清晰，不是一路半透地飘上来 */
-                    const op = Math.min(1, Math.pow(t / 0.32, 1.25));
-                    frames.push({
-                        opacity: +op.toFixed(3),
-                        transform: `translate3d(0,${y.toFixed(2)}px,0)`,
-                        offset: +t.toFixed(4)
-                    });
-                }
-                const last = frames[frames.length - 1];
-                last.opacity = 1;
-                last.transform = "translate3d(0,0,0)";
-                return frames;
-            }
-
-            const workRollCache = new Map();
-            function workRollFrames(key, offsetY) {
-                let f = workRollCache.get(key);
-                if (!f) { f = buildWorkRoll(offsetY); workRollCache.set(key, f); }
-                return f;
-            }
-
             /* 翻滚必须等页面滚动基本停稳再起跳：两者同时跑会叠成一段混乱的复合运动，
-               这是「不丝滑」最主要的来源 */
+               这是「不丝滑」最主要的来源。160ms 时滚动约剩 120ms，
+               而卡片前 30% 还在抬起，两者刚好错开。 */
             let workRevealTimer = 0;
             function cancelWorkReveal() { if (workRevealTimer) { clearTimeout(workRevealTimer); workRevealTimer = 0; } }
             function scheduleWorkCards() {
                 cancelWorkReveal();
-                /* 滚动进行中则等它接近收尾再起跳：完全不重叠会显得"停一下再动"，
-                   重叠太多又会把两个运动搅在一起。160ms 时滚动约剩 120ms，
-                   而卡片前 30% 还在淡入，两者刚好错开。 */
                 if (snapAnimating || scrollManager.animating) {
                     workRevealTimer = window.setTimeout(() => { workRevealTimer = 0; playWorkCards(); }, 160);
                 } else {
@@ -3167,49 +3158,95 @@
                 }
             }
 
+            /* 入场：一条 GSAP timeline 串起三层 ——
+               ① 卡片本体：从下方 36px、绕底边 rotateX(-5°) 抬起落位（perspective 1000）。
+                  一点点透视就够，卡片像被「放」到台面上，而不是平铺着平移过去。
+               ② 卡内元素：水印从右侧滑入 → 公司名 → 职位/年份 → 分隔线 scaleX(0→1) → 描述，
+                  比本体晚 0.10~0.25s 起、彼此再错开 45ms ——「卡片先落位、内容再写进去」，
+                  层次全在这里，不靠姿态变化。
+               ③ 年份标签：字段基本落位后「咔哒咔哒」翻滚到最终值（移动端直接显示）。
+               曲线统一 power3.out（起步快、尾巴软，有落定感、没有回弹），和 page3 同一条。
+               全部以 clearProps 收尾，把 transform / opacity 还给 CSS。 */
             function playWorkCards() {
                 cancelWorkReveal();
+                clearWorkResetTimer();
                 resetWorkCards();
-                const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-                /* ★ reduce 下整段收工，不再往下排 timeout。
-                   原来只在下面 forEach 里对单张卡 return，函数末尾那句
-                   requestAnimationFrame(revealWorkFields) 照样执行 —— 于是：
-                   ① 年份标签仍会被 tweenYearSmall 拉着「咔哒咔哒」翻滚一轮，
-                      而这正是 reduce 要屏蔽的那类持续性细动；
-                   ② 每张卡又被挂上 1.08s 的 .revealing，之后 hover 的颜色 / 位移
-                      全被这段 transition-delay 拖住零点几秒才响应。
-                   showWorkCardsInstantly 正是「清掉 rAF + 直接摆终态」的现成做法，
-                   而 resetWorkCards() 已经把年份文本还原成原文 —— 直接用即可。 */
-                if (reducedMotion) { showWorkCardsInstantly(); return; }
+                if (reducedMotionQ.matches) { showWorkCardsInstantly(); return; }
+                const g = window.gsap;
+                if (!g) { showWorkCardsInstantly(); return; }
+
                 const mobile = isMobile();
-                /* 三张卡纯直落，靠「起始延迟 + 距离/时长」分化：
-                   位移与时长按索引同比放大，三张卡的下落速度才一致（≈0.52px/ms），
-                   只是跑的距离不同才先后咬合。老虎机「依次停」的悬念感保留，
-                   同时多了「依次启动」的层次 —— 层次来自节奏，不来自姿态变化。 */
-                const baseOff = mobile ? 150 : 205, offStep = mobile ? 28 : 40;
-                const baseDur = mobile ? 300 : 395, durStep = mobile ? 55 : 75;
-                const delayStep = mobile ? 55 : 95;
-                workCards.forEach((card, i) => {
-                    const offsetY = baseOff + i * offStep;
-                    const duration = baseDur + i * durStep;
-                    card.style.willChange = "transform,opacity";
-                    const anim = card.animate(workRollFrames(`${mobile ? "m" : "d"}:${i}`, offsetY), { duration, delay: i * delayStep, easing: "linear", fill: "backwards" });
-                    anim.onfinish = () => { card.classList.remove("pre-roll");
-                        clearCardInlineStyles(card);
-                        anim.cancel(); };
-                    workAnims.push(anim);
+                const CARD_DUR = mobile ? 0.48 : 0.60;
+                const CARD_STAGGER = mobile ? 0.050 : 0.080;
+                const FROM_Y = mobile ? 24 : 34;
+                const FROM_RX = mobile ? 0 : -5;
+                const WM_X = mobile ? 18 : 44;
+                const STEP = mobile ? 0.032 : 0.040;
+
+                /* 作废 resetWorkCards 里排队的那次 data-gsap 移除 —— 它会在两帧后
+                   把动画正在用的 data-gsap 摘掉，CSS transition 一回来就跟 GSAP 抢属性 */
+                workSnapToken++;
+                workCards.forEach(c => c.setAttribute("data-gsap", ""));
+
+                const tl = g.timeline({
+                    onComplete: () => {
+                        workCards.forEach(c => c.removeAttribute("data-gsap"));
+                        if (workTimeline === tl) workTimeline = null;
+                    }
                 });
-                /* 字段级 reveal：与卡片本体动画几乎同步触发（延迟两帧让浏览器先把
-                   初始态 commit 进样式表，再摘 .field-pending 触发 transition —— 否则
-                   transition 检测不到属性变化就完全不跑）。
-                   stagger 节奏由 .revealing 上的 transition-delay 控制
-                   （company-name 30ms → desc-text 230ms，再叠加卡片自身的 0/95/190ms），
-                   总收尾约 ~1.05s，比卡片本体 ~0.75s 略长 ——「卷轴到位」在前，「笔触收尾」在后 */
-                requestAnimationFrame(() => requestAnimationFrame(revealWorkFields));
+                workTimeline = tl;
+
+                workCards.forEach((card, i) => {
+                    const at = i * CARD_STAGGER;
+                    /* ① 卡片本体。fromTo 创建时就把起始态写成内联，同一帧里再摘掉 .pre-roll ——
+                       不会闪出 CSS 的「可见态」那一帧 */
+                    tl.fromTo(card,
+                        { opacity: 0, y: FROM_Y, rotateX: FROM_RX, transformPerspective: 1000, transformOrigin: "50% 100%" },
+                        { opacity: 1, y: 0, rotateX: 0, duration: CARD_DUR, ease: "power3.out",
+                          clearProps: "transform,opacity,transformOrigin,transformPerspective" },
+                        at);
+                    card.classList.remove("pre-roll");
+
+                    /* ② 卡内元素：主体先立，细节后落 */
+                    const wm = card.querySelector(".year-watermark");
+                    const name = card.querySelector(".company-name");
+                    const meta = card.querySelector(".meta-row");
+                    const divider = card.querySelector(".divider-line");
+                    const desc = card.querySelector(".desc-text");
+                    const rollTarget = card.querySelector(".year-small");
+
+                    if (wm) tl.fromTo(wm,
+                        { opacity: 0, x: WM_X },
+                        { opacity: 1, x: 0, duration: CARD_DUR * 0.92, ease: "power2.out",
+                          clearProps: "transform,opacity" },
+                        at + 0.10);
+                    if (name) tl.fromTo(name,
+                        { opacity: 0, y: mobile ? 8 : 14 },
+                        { opacity: 1, y: 0, duration: CARD_DUR * 0.86, ease: "power2.out",
+                          clearProps: "transform,opacity" },
+                        at + 0.11);
+                    if (meta) tl.fromTo(meta,
+                        { opacity: 0, y: mobile ? 8 : 12 },
+                        { opacity: 1, y: 0, duration: CARD_DUR * 0.82, ease: "power2.out",
+                          clearProps: "transform,opacity" },
+                        at + 0.11 + STEP);
+                    if (divider) tl.fromTo(divider,
+                        { scaleX: 0 },
+                        { scaleX: 1, duration: CARD_DUR * 0.80, ease: "power2.inOut",
+                          clearProps: "transform" },
+                        at + 0.11 + STEP * 2);
+                    if (desc) tl.fromTo(desc,
+                        { opacity: 0, y: mobile ? 7 : 10 },
+                        { opacity: 1, y: 0, duration: CARD_DUR * 0.90, ease: "power2.out",
+                          clearProps: "transform,opacity" },
+                        at + 0.11 + STEP * 3);
+
+                    /* ③ 年份翻滚：字段基本落位后再起跳，收尾正好接住整条 timeline */
+                    if (!mobile && rollTarget) tl.call(() => tweenYearSmall(rollTarget), null, at + 0.26);
+                });
             }
 
             resetWorkCards();
-
             const yearEl = document.getElementById("yearDigits");
             const FINAL = "2021–2026";
             const chars = FINAL.split("");
@@ -3733,10 +3770,13 @@
                 suspendCssSnap();
                 document.body.classList.add("returning");
 
-                /* 工作经历页的卡片平时停在 pre-roll / field-pending 隐藏态（等入场动画），
-                   回顶滑过它时直接摆到终态并禁过渡，否则会看到一整屏空白（卡片没 reveal）。
-                   与跨屏跳转「路过」共用同一个 showWorkCardsInstantly。 */
-                showWorkCardsInstantly();
+                /* 回顶会连续滑过工作经历屏。★ 这里只做一次「卡片是不是还停在隐藏态」的检查，
+                   真的停着才摆一次终态；否则一个属性都不碰。
+                   原因：任何改写都会让这一整屏的绘制结果作废，而它此刻是看不见的 ——
+                   浏览器不会立刻重绘，等滑到它面前的那一帧才现场光栅化，
+                   正好砸在「滑到工作经历」那一下上，就是那下卡顿。
+                   卡片只要在上一次离开时保持终态，这里什么都不用做，滑过去是纯合成。 */
+                ensureWorkCardsVisible();
 
                 /* 纵深推拉期间挂 will-change：缩放会让合成层按新比例重新栅格化，
                    不声明的话每帧在"变换—重栅格"之间来回，白扔主线程时间。
@@ -3809,8 +3849,11 @@
                 suspendCssSnap();
                 document.body.classList.add("returning");
 
-                /* 路过工作经历屏时卡片摆终态，全程可见不空白（与回顶同一套） */
-                showWorkCardsInstantly();
+                /* 工作经历屏在这个滑行里可能是「路过」，也可能是「终点」：
+                   · 路过 → 只做一次隐藏态检查，卡片保持终态跟着滑过去（纯合成，不改写）；
+                   · 终点 → 现在就把卡片藏起来，等落位后再完整播一遍入场。
+                     不这么做的话，卡片会跟着页面一起滑进来，落到终点又突然消失重播一遍。 */
+                if (target === 1) resetWorkCards(); else ensureWorkCardsVisible();
 
                 const screens = [page1, pageWork, page2, page3, page4];
                 /* 同上：纵深推拉期间挂 will-change，收尾时摘掉 */
@@ -4353,7 +4396,17 @@
                 /* passing = 跨多屏跳转时「路过」这一屏：只让它可见，不触发它自己的入场动画。
                    否则每路过一屏就完整放一遍卡片翻滚 / 老虎机 / 4 个视频，既卡又乱；
                    但页面本身要看得见，回顶时才有中途掠过的连续感。 */
-                setActive(pageWork, nextSection === 1); if (nextSection === 1) { if (!passing) scheduleWorkCards(); else showWorkCardsInstantly(); } else if (prev === 1) resetWorkCards();
+                /* 进 / 出工作经历屏。
+                   ★ 进入时「立刻」复位，而不是等 160ms 后的 playWorkCards 里再复位：
+                     这一刻整页 opacity 还是 0（单屏翻页的淡入才刚开始 / 跨屏滑行还没落到它），
+                     复位看不见；晚 160ms 再复位就会在半透明的页面上看见卡片凭空消失。
+                   ★ 掠过时一个属性都不碰（ensureWorkCardsVisible 只做一次 class 检查）——
+                     见 exitWorkCards 上方那段注释，这是「回顶滑到工作经历卡一下」的根治点。 */
+                setActive(pageWork, nextSection === 1);
+                if (nextSection === 1) {
+                    if (passing) ensureWorkCardsVisible();
+                    else { resetWorkCards(); scheduleWorkCards(); }
+                } else if (prev === 1) exitWorkCards();
                 setActive(page2, nextSection === 2); if (nextSection === 2 && !loopActive) { loopActive = true; if (!passing) startSlotSpin(); } else if (prev === 2 && loopActive && nextSection !== 2) { loopActive = false; clearTimers(); yearEl.textContent = FINAL; }
                 setActive(page3, nextSection === 3);
                 if (nextSection === 3) {
