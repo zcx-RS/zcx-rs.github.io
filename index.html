@@ -518,21 +518,73 @@
         .page2,.page4{position:fixed;inset:0;z-index:25;background:var(--bg);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity 0.3s ease;will-change:opacity;contain:layout style paint;}
         .page2.active,.page4.active{opacity:1;pointer-events:auto;}
         .page4{z-index:35;transition:opacity 0.5s ease;contain:layout style;}
-        /* ★ 最后一屏的离场：不淡出，直接消失。
-           这一屏是浅底 + 正中间一块高对比的 3D 工牌，和上一屏（四列卡片）几乎同时切 class。
-           原来是 0.5s 交叉淡出 —— 实测切 class 后 94ms，page4 还有 0.643、page3 已经 0.741，
-           两层各七成不透明叠在一起，就是「重」的来源。
-           中途试过两条路，都不够干净：
-             · 把离场压到 0.16s + ease-out：94ms 时 page4 还剩 0.029，仍然能看见一层薄影；
-             · 再让 page3 晚 90ms 进场（错峰）：确实不叠了，但中间空出一段，
-               而且多了一套 body.from-final 状态要维护。
-           既然两屏背景都是 var(--bg)=#d7d6d2，中间露出来的是同色底，不存在闪白/闪黑，
-           那最简单也最干净的答案就是「切」：page4 当场归零，page3 立刻从 0 往上淡入。
-           观感是「工牌一拍消失 → 卡片从下面推上来」，两边零重叠。
-           入场仍是原来的 0.5s ease，不动 —— 工牌落下来那段的节奏是你调过的。
-           注：`:not(.active)` 特异性 (0,2,0) 高于 `.page4` (0,1,0)，
-           所以这条只管「离开」，不用改上面那行。 */
-        .page4:not(.active){transition:none;}
+        /* ★ 最后一屏的离场：还是淡入淡出，但把「让它难看的三个原因」逐个拆掉。
+           先记下前面几版为什么不成立（都是同一个毛病换了层皮）：
+             · 0.5s 交叉淡出 → 94ms 时 page4 还有 0.643、page3 已经 0.741，显得「重」；
+             · 0.16s 快淡出 + 90ms 错峰 → 还有一层薄影，仍然「重」；
+             · 整屏上推 / 4% 上飘 → 「割裂」/「还是在闪」；
+             · 内容层上飘 + 微缩 + 淡出 → 动的是素材不是「页」，还是不够。
+           三个真正的原因：
+           ① 背景也在淡。page4 自带一层实心 #d7d6d2，淡出到 0.6 不透明度时，
+              这层灰白就蒙在 page3 上面 —— 于是 page3 的深色卡片看起来「发灰、发闷」，
+              同时 page4 自己的内容还没走干净。这就是「重」的第一来源。
+              修法：把 page4 的背景设成 transparent，颜色交给 body。
+              两屏底色本来就都是 var(--bg)，视觉上零差别，但淡出时不再有灰蒙层，
+              透出来的是恒定的一整块底色 —— 全程不闪、不发灰。
+           ② 两层内容在同一时刻都浓。交叉淡出（一边淡出一边淡入）必然产生一段
+              「两层各五成」的画面 —— 浅色工牌页和深色卡片页各五成，混出来就是一团灰。
+              所以改成「淡穿」（fade through，Material 里对「两屏内容完全不同」的标准做法）：
+              先用 0.16s 把 page4 淡到干净底，page3 到那一刻**直接以实心出现**，
+              再从下方 30px 落到位（位移 0.34s），全程没有一帧半透明。
+              为什么最后连淡入也不要了：残影感的来源是**半透明内容的停留时长**，
+               0.26s+0.40s 那版有 0.66s 都在半透明，0.16s+0.14s 那版还有 0.2s；
+               只要还留着淡入，就一定有一段时间「旧页在淡、新页在淡」，
+               而这场转场的底色是恒定的浅灰，任何半透明都会被看成重影。
+               去掉淡入后，切换只剩两件事：旧内容散掉、新内容落位。
+           ③ 平面叠平面，人眼只能读成「两张图糊在一起」。给退出层加一点点后退缩放（0.985），
+              进入层从 1.015 落定，就有了前后关系 —— 读成「旧页退到后面、新页来到前面」，
+              而不是两张图对叠。数字很小，是「感觉到但说不出」的量级。
+           三者叠加，同样是淡入淡出，观感从「两块板子叠」变成「同一块底色上内容在换」。 */
+        .page4{
+            z-index:35;
+            /* ★ 关键：背景不参与淡化，颜色统一由 body 提供（同为 --bg） */
+            /* 进场也从「稍远一点」落定，和离场对称 */
+            transform:scale(0.985);
+            transition:opacity 0.5s ease,transform 0.66s cubic-bezier(0.22,1,0.36,1);
+            contain:layout style;
+            will-change:opacity,transform;
+        }
+        .page4.active{transform:none;}
+        /* 只在「从最后一屏往上回一格」的这段里让背景透明（见上面第①条）。
+           往下进入这一屏时它仍是不透明的，入场观感和以前一致，
+           不会因为「两层内容互相透」反而变糊。 */
+        body.from-final .page4{background:transparent;}
+        .page4:not(.active){
+            /* 离场 0.16s，而且是「先实后散」的 ease-in：
+               前半段几乎还是实心的，走近乎直落 —— 半透明的残影只存在最后几十毫秒。
+               换成 ease-out 就是「一上来就变淡」，那才是残影感的来源。 */
+            transform:scale(0.985);
+            transition:opacity 0.16s cubic-bezier(0.62,0,0.95,0.32),transform 0.3s cubic-bezier(0.22,1,0.36,1);
+        }
+        /* 错峰：只在「从最后一屏往上回一格」时，page3 晚 0.12s 再起（等 page4 先走掉大半）。
+           body.from-final 由 syncHomeSection 按 prev===4 && nextSection===3 现算，
+           每次切屏重写，不留状态。从 page2 往下翻进 page3 的节奏完全不受影响。 */
+        body.from-final .page3.active{
+            transition-delay:0.16s;
+            /* 淡入直接去掉（0s），只留位移：page3 在「实心那一刻」出现，
+               然后从下方 30px 的位置落到位。**没有任何一帧是半透明的**，
+               所以不可能再看到残影。位移本身是纯合成属性，稳。
+               0.34s 走全站那条 cubic-bezier(0.22,1,0.36,1)。
+               注意：这一条只压在 body.from-final 上，从 page2 往下翻进 page3 时
+               仍然是原来的 0.45s/0.55s 淡入 + 30px 上浮。 */
+            transition-duration:0s,0.34s;
+        }
+        /* 移动端保持原样：那边五屏的位移和透明度都由 paintMobileScreens 写 inline 控制，
+           这里不掺和（inline 也压得住下面这两条）。 */
+        @media (max-width:768px),(hover:none) and (pointer:coarse){
+            .page4{transform:none;transition:opacity 0.3s ease;}
+            .page4:not(.active){transform:none;transition:opacity 0.3s ease;}
+        }
         .splash-wrapper{display:flex;align-items:flex-start;justify-content:center;}
         .splash-title{font-size:clamp(5rem,16vw,14rem);font-weight:750;letter-spacing:0.06em;color:#0a0a0a;line-height:1;user-select:none;}
         .year-tag{font-size:clamp(1.1rem,1.9vw,1.5rem);font-weight:550;letter-spacing:0.06em;color:#3a3a3a;user-select:none;opacity:0.85;line-height:1;white-space:nowrap;margin-left:clamp(0.3rem,0.8vw,0.6rem);margin-top:0.35em;}
@@ -4423,6 +4475,12 @@
                     else { resetWorkCards(); scheduleWorkCards(); }
                 } else if (prev === 1) exitWorkCards();
                 setActive(page2, nextSection === 2); if (nextSection === 2 && !loopActive) { loopActive = true; if (!passing) startSlotSpin(); } else if (prev === 2 && loopActive && nextSection !== 2) { loopActive = false; clearTimers(); yearEl.textContent = FINAL; }
+                /* ★ 从最后一屏往上回一格时打个标记：page3 的内容晚 0.26s 再起，
+                   等 page4 先淡干净（淡穿，不是交叉淡出）。
+                   ★ 必须在 setActive(page3) 之前挂：过渡是在「样式变化后第一次重算」
+                     那一刻按当时的 transition-delay 决定起点的，晚一步挂上去，
+                    page3 已经按 delay:0 起跑了，等于没延迟（实测过一次，两层各 0.84）。 */
+                document.body.classList.toggle("from-final", nextSection === 3 && prev === 4);
                 setActive(page3, nextSection === 3);
                 if (nextSection === 3) {
                     /* 路过（跨屏掠过 / 回顶滑过）时不播进场、直接摆终态，否则一整屏空白；
